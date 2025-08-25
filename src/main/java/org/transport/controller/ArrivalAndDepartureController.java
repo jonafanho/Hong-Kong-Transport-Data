@@ -10,6 +10,7 @@ import org.transport.response.ListResult;
 import org.transport.response.RealtimeResponse;
 import org.transport.service.GtfsService;
 import org.transport.tool.Constants;
+import org.transport.tool.Utilities;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -98,14 +99,15 @@ public final class ArrivalAndDepartureController {
 
 						if (!frequencies.isEmpty() || arrivalMillis != null && isBetween(arrivalMillis, queryStartMillis, queryEndMillis) || departureMillis != null && isBetween(departureMillis, queryStartMillis, queryEndMillis)) {
 							final StopLocation lastStop = gtfsData.gtfsDao.getLastStopLocationForTrip(trip);
+							final String routeShortName = Utilities.removeLeadingZeros(route.getShortName());
 							return new ArrivalAndDeparture(
 									arrivalMillis,
 									departureMillis,
 									isTerminating,
-									route.getShortName(),
-									cleanName(route.getLongName(), route.getShortName()),
-									cleanName(stopTime.getStopHeadsign(), route.getShortName()),
-									cleanName(trip.getTripHeadsign(), route.getShortName()),
+									routeShortName,
+									cleanName(route.getLongName(), routeShortName),
+									cleanName(stopTime.getStopHeadsign(), routeShortName),
+									cleanName(trip.getTripHeadsign(), routeShortName),
 									lastStop == null ? null : lastStop.getName(),
 									stopTime.isTimepointSet() && stopTime.getTimepoint() > 0,
 									frequencies,
@@ -164,7 +166,8 @@ public final class ArrivalAndDepartureController {
 
 	@Nullable
 	private static String cleanName(@Nullable String name, @Nullable String routeShortName) {
-		return routeShortName == null ? name : name == null ? null : (name.startsWith(routeShortName + " ") ? name.substring(routeShortName.length()) : name).trim();
+		final String cleanedName = Utilities.removeLeadingZeros(name);
+		return routeShortName == null ? cleanedName : cleanedName == null ? null : (cleanedName.startsWith(routeShortName + " ") ? cleanedName.substring(routeShortName.length()) : cleanedName).trim();
 	}
 
 	@FunctionalInterface

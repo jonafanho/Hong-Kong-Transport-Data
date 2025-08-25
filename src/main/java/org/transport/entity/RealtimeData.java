@@ -46,11 +46,11 @@ public final class RealtimeData {
 
 			for (final RealtimeResponse realtimeResponse : realtimeResponses) {
 				final Trip trip = stopTime.getTrip();
-				if (Objects.equals(trip.getId().getAgencyId(), realtimeResponse.agency()) && Objects.equals(trip.getBlockId(), realtimeResponse.blockId())) {
+				if (Objects.equals(trip.getId().getAgencyId(), realtimeResponse.agency()) && (trip.getBlockId() == null && Objects.equals(trip.getId().getId(), realtimeResponse.tripId()) || trip.getBlockId() != null && Objects.equals(trip.getBlockId(), realtimeResponse.blockId()))) {
 					if (filteredRealtimeResponse == null) {
 						filteredRealtimeResponse = realtimeResponse;
 					} else {
-						log.warn("Duplicate vehicle on block! [{}] [{}]", trip.getRoute().getShortName(), trip.getTripHeadsign());
+						log.warn("Duplicate vehicle on block! [{}] [{}] on trip [{}] and block [{}]", trip.getRoute().getShortName(), trip.getTripHeadsign(), trip.getId(), trip.getBlockId());
 						if (realtimeResponse.deviation() != 0) {
 							filteredRealtimeResponse = realtimeResponse;
 						}

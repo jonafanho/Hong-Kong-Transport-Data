@@ -63,17 +63,19 @@ export class MapComponent implements AfterViewInit {
 				if (this.markerGroup) {
 					this.markerGroup.clearLayers();
 					data.list.forEach(stopExtension => {
-						const marker = Leaflet.marker([stopExtension.stop.lat, stopExtension.stop.lon], {icon: createIcon(primaryColor, stopExtension.direction), riseOnHover: true});
-						marker.bindPopup(`
-							<div class="column gap-small">
-								<strong>${stopExtension.stop.name}</strong>
-								<div>${stopExtension.routes.join(", ")}</div>
-							</div>
-						`, {closeButton: false});
-						marker.on("mouseover", () => marker.openPopup());
-						marker.on("mouseout", () => marker.closePopup());
-						marker.on("click", () => this.arrivalsService.stopClicked.emit(stopExtension));
-						this.markerGroup?.addLayer(marker);
+						if (stopExtension.routes.length > 0) {
+							const marker = Leaflet.marker([stopExtension.stop.lat, stopExtension.stop.lon], {icon: createIcon(primaryColor, stopExtension.direction), riseOnHover: true});
+							marker.bindPopup(`
+								<div class="column gap-small">
+									<strong>${stopExtension.stop.name}</strong>
+									<div>${stopExtension.routes.join(", ")}</div>
+								</div>
+							`, {closeButton: false});
+							marker.on("mouseover", () => marker.openPopup());
+							marker.on("mouseout", () => marker.closePopup());
+							marker.on("click", () => this.arrivalsService.stopClicked.emit(stopExtension));
+							this.markerGroup?.addLayer(marker);
+						}
 					});
 				}
 			});

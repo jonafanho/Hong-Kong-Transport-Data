@@ -165,7 +165,7 @@ public final class GtfsDao extends GtfsRelationalDaoImpl {
 	}
 
 	private static String getRouteName(Route route) {
-		return route.getShortName() != null ? route.getShortName() : route.getLongName() != null ? route.getLongName() : route.getDesc();
+		return route.getShortName() != null ? Utilities.removeLeadingZeros(route.getShortName()) : route.getLongName() != null ? route.getLongName() : route.getDesc();
 	}
 
 	private record TripDetails(@Nullable AgencyAndId shapeId, @Nullable AgencyAndId stopId1, @Nullable AgencyAndId stopId2) {
