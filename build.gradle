@@ -1,13 +1,13 @@
 plugins {
 	id "java"
-	id "org.springframework.boot" version "+"
-	id "io.spring.dependency-management" version "+"
+	id "org.springframework.boot" version "3.+"
+	id "io.spring.dependency-management" version "1.+"
 }
 
 group = "org.transport"
 
 java {
-	toolchain { languageVersion = JavaLanguageVersion.of(17) }
+	toolchain { languageVersion = JavaLanguageVersion.of(21) }
 }
 
 repositories {
@@ -15,10 +15,10 @@ repositories {
 }
 
 dependencies {
-	implementation "org.onebusaway:onebusaway-gtfs:+"
-	implementation "org.onebusaway:onebusaway-gtfs-merge:+"
-	implementation "org.springframework.boot:spring-boot-starter-webflux"
-	implementation "net.lingala.zip4j:zip4j:+"
+	implementation "org.springframework.boot:spring-boot-starter-webflux:3.+"
+	implementation "org.springframework.boot:spring-boot-starter-data-jpa:3.+"
+	implementation "org.jspecify:jspecify:+"
+	runtimeOnly "com.h2database:h2"
 	compileOnly "org.projectlombok:lombok"
 	annotationProcessor "org.projectlombok:lombok"
 }

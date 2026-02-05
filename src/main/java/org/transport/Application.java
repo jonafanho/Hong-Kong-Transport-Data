@@ -2,13 +2,13 @@ package org.transport;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.transport.tool.ParametersAreNonnullByDefault;
+import org.springframework.scheduling.annotation.EnableScheduling;
 
-@ParametersAreNonnullByDefault
 @SpringBootApplication
-public class Main {
+@EnableScheduling
+public class Application {
 
 	public static void main(String[] args) {
-		SpringApplication.run(Main.class, args);
+		SpringApplication.run(Application.class, args);
 	}
 }

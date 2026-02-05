@@ -1,4 +1,4 @@
 @NullMarked
-package org.transport.service;
+package org.transport.entity;
 
 import org.jspecify.annotations.NullMarked;

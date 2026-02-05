@@ -28,8 +28,5 @@ bin/
 
 *.DS_Store
 
-sources.json
-sources/
-**/generated/
 src/main/resources/static/
 website/.gitignore
