@@ -45,7 +45,8 @@ public final class ConsolidationService {
 		Flux.merge(
 						kmbConsolidationService.consolidate(),
 						ctbConsolidationService.consolidate(),
-						mtrConsolidationService.consolidate()
+						mtrConsolidationService.consolidateMtr(),
+						mtrConsolidationService.consolidateLrt()
 				)
 				.collectList()
 				.publishOn(Schedulers.boundedElastic())
