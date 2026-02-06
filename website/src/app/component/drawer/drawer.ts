@@ -1,4 +1,4 @@
-import {Component} from "@angular/core";
+import {Component, inject} from "@angular/core";
 import {DrawerModule} from "primeng/drawer";
 import {ArrivalsService} from "../../service/arrivals.service";
 import {DividerModule} from "primeng/divider";
@@ -20,10 +20,12 @@ import {MINUTES_PER_HOUR} from "../../utility/constants";
 	styleUrl: "./drawer.scss",
 })
 export class DrawerComponent {
+	private readonly arrivalsService = inject(ArrivalsService);
+
 	protected visible = false;
 
-	constructor(private readonly arrivalsService: ArrivalsService) {
-		arrivalsService.stopClicked.subscribe(stopExtension => this.visible = !!stopExtension);
+	constructor() {
+		this.arrivalsService.stopClicked.subscribe(stop => this.visible = !!stop);
 	}
 
 	closeDrawer() {

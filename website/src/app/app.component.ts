@@ -1,4 +1,4 @@
-import {Component} from "@angular/core";
+import {Component, inject} from "@angular/core";
 import {MapComponent} from "./component/map/map";
 import {DrawerComponent} from "./component/drawer/drawer";
 import {LangService} from "./service/lang.service";
@@ -14,7 +14,8 @@ import {LangService} from "./service/lang.service";
 })
 export class AppComponent {
 
-	constructor(langService: LangService) {
+	constructor() {
+		const langService = inject(LangService);
 		langService.init();
 	}
 }

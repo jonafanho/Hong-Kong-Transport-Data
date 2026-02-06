@@ -1,6 +1,6 @@
-import {EventEmitter, Injectable} from "@angular/core";
+import {EventEmitter, inject, Injectable} from "@angular/core";
 import {HttpClient} from "@angular/common/http";
-import {StopExtension} from "../data/stopExtension";
+import {Stop} from "../data/stop";
 import {url} from "../utility/settings";
 import {Arrival} from "../data/arrival";
 import {formatAbsoluteTime, formatRelativeTime} from "../utility/utilities";
@@ -11,37 +11,39 @@ const defaultMinutesAfter = 120;
 
 @Injectable({providedIn: "root"})
 export class ArrivalsService {
-	public readonly stopClicked = new EventEmitter<StopExtension | undefined>();
+	private readonly httpClient = inject(HttpClient);
+
+	public readonly stopClicked = new EventEmitter<Stop | undefined>();
 	private arrivals: Arrival[] = [];
 	private minutesAfter = defaultMinutesAfter;
 	private loading = false;
 	private addMinutesAfterLoading = false;
-	private stopExtension?: StopExtension;
+	private stop?: Stop;
 	private intervalId = -1;
 
-	constructor(private readonly httpClient: HttpClient) {
-		this.stopClicked.subscribe(stopExtension => {
-			this.stopExtension = stopExtension;
+	constructor() {
+		this.stopClicked.subscribe(stop => {
+			this.stop = stop;
 			this.arrivals = [];
 			this.minutesAfter = defaultMinutesAfter;
-			this.loading = !!this.stopExtension;
+			this.loading = !!this.stop;
 			this.addMinutesAfterLoading = false;
-			this.fetchData();
+			// this.fetchData();
 		});
 
 		setInterval(() => this.arrivals.forEach(arrival => arrival.formatRelativeTime()), 100);
 	}
 
 	getName() {
-		return this.stopExtension?.stop?.name ?? "";
+		return this.stop?.nameTc ?? "";
 	}
 
 	getRoutes() {
-		return this.stopExtension?.routes ?? [];
+		return this.stop?.routes ?? [];
 	}
 
 	getId() {
-		return this.stopExtension ? `${this.stopExtension.stop.id.agencyId}_${this.stopExtension.stop.id.id}` : "";
+		return this.stop?.id;
 	}
 
 	getArrivals() {
@@ -59,7 +61,7 @@ export class ArrivalsService {
 	addMinutesAfter() {
 		this.minutesAfter += defaultMinutesAfter;
 		this.loading = false;
-		this.addMinutesAfterLoading = !!this.stopExtension;
+		this.addMinutesAfterLoading = !!this.stop;
 		this.fetchData();
 	}
 

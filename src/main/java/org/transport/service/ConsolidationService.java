@@ -18,7 +18,7 @@ import java.time.Duration;
 @Service
 public final class ConsolidationService {
 
-	private final ConsolidationPersistenceService consolidationPersistenceService;
+	private final PersistenceService persistenceService;
 	private final BusConsolidationService busConsolidationService;
 	private final MtrConsolidationService mtrConsolidationService;
 
@@ -32,7 +32,7 @@ public final class ConsolidationService {
 
 	@Scheduled(cron = "0 30 5 * * *", zone = "Asia/Hong_Kong") // Update every day at 5:30 am HKT
 	public void consolidate() {
-		if (consolidationPersistenceService.canConsolidate()) {
+		if (persistenceService.canConsolidate()) {
 			log.info("Starting data consolidation");
 			final long startMillis = System.currentTimeMillis();
 
@@ -44,7 +44,7 @@ public final class ConsolidationService {
 					)
 					.collectList()
 					.publishOn(Schedulers.boundedElastic())
-					.doOnNext(consolidationPersistenceService::persistStops)
+					.doOnNext(persistenceService::persistStops)
 					.block();
 
 			log.info("Data consolidation complete in {} seconds", (System.currentTimeMillis() - startMillis) / 1000);

@@ -3,6 +3,7 @@ package org.transport.service;
 import jakarta.transaction.Transactional;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.transport.entity.ConsolidationTimestamp;
 import org.transport.entity.Stop;
@@ -14,7 +15,7 @@ import java.util.List;
 @Slf4j
 @AllArgsConstructor
 @Service
-public class ConsolidationPersistenceService {
+public class PersistenceService {
 
 	private final StopRepository stopRepository;
 	private final ConsolidationTimestampRepository consolidationTimestampRepository;
@@ -31,5 +32,15 @@ public class ConsolidationPersistenceService {
 		stopRepository.deleteAllInBatch();
 		stopRepository.saveAllAndFlush(stops);
 		consolidationTimestampRepository.save(new ConsolidationTimestamp(ConsolidationTimestamp.ID, System.currentTimeMillis()));
+	}
+
+	@Transactional
+	public List<Stop> getStops(double minLat, double maxLat, double minLon, double maxLon, int maxCount) {
+		return stopRepository.findByLatBetweenAndLonBetween(minLat, maxLat, minLon, maxLon, Pageable.ofSize(maxCount)).getContent();
+	}
+
+	@Transactional
+	public List<Stop> getAllStops() {
+		return stopRepository.findAll();
 	}
 }

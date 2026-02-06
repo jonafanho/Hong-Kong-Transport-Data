@@ -1,10 +1,10 @@
-import {AfterViewInit, Component} from "@angular/core";
+import {AfterViewInit, Component, inject} from "@angular/core";
 
 import * as Leaflet from "leaflet";
 import {HttpClient} from "@angular/common/http";
 import {url} from "../../utility/settings";
 import {createIcon} from "../../utility/stopIcon";
-import {StopExtension} from "../../data/stopExtension";
+import {Stop} from "../../data/stop";
 import {ArrivalsService} from "../../service/arrivals.service";
 
 @Component({
@@ -14,27 +14,28 @@ import {ArrivalsService} from "../../service/arrivals.service";
 	styleUrl: "./map.scss",
 })
 export class MapComponent implements AfterViewInit {
+	private readonly arrivalsService = inject(ArrivalsService);
+	private readonly httpClient = inject(HttpClient);
+
 	private map?: Leaflet.Map;
 	private markerGroup?: Leaflet.LayerGroup;
 	private timeoutId = 0;
 
-	constructor(private readonly arrivalsService: ArrivalsService, private readonly httpClient: HttpClient) {
-	}
-
 	ngAfterViewInit() {
-		if (navigator.geolocation) {
-			navigator.geolocation.getCurrentPosition(
-				({coords}) => this.initMap(coords.latitude, coords.longitude, 13),
-				() => this.getApproximateLocation(),
-			);
-		} else {
-			this.getApproximateLocation();
-		}
-	}
-
-	private getApproximateLocation() {
-		this.httpClient.get<{ data: { lat: number, lon: number } }>(`${url}api/centerPoint`).subscribe({
-			next: ({data}) => this.initMap(data.lat, data.lon, 10),
+		this.httpClient.get<{ lat: number, lon: number }>(`${url}api/centerPoint`).subscribe({
+			next: ({lat, lon}) => {
+				if (navigator.geolocation) {
+					navigator.geolocation.getCurrentPosition(({coords}) => {
+						if (Math.abs(coords.latitude - lat) >= 2 || Math.abs(coords.longitude - lat) >= 2) {
+							this.initMap(lat, lon, 10);
+						} else {
+							this.initMap(coords.latitude, coords.longitude, 13);
+						}
+					}, () => this.initMap(lat, lon, 10));
+				} else {
+					this.initMap(lat, lon, 10);
+				}
+			},
 			error: () => this.initMap(0, 0, 3),
 		});
 	}
@@ -56,24 +57,23 @@ export class MapComponent implements AfterViewInit {
 		if (this.map) {
 			const primaryColor = getComputedStyle(document.documentElement).getPropertyValue("--p-primary-color");
 			const latLngBounds = this.map.getBounds();
-			const center = latLngBounds.getCenter();
 			const northEast = latLngBounds.getNorthEast();
 			const southWest = latLngBounds.getSouthWest();
-			this.httpClient.get<{ data: { list: StopExtension[] } }>(`${url}api/stops-for-location?lat=${center.lat}&lon=${center.lng}&latSpan=${northEast.lat - southWest.lat}&lonSpan=${northEast.lng - southWest.lng}&maxCount=128`).subscribe(({data}) => {
+			this.httpClient.get<Stop[]>(`${url}api/getStops?minLat=${southWest.lat}&maxLat=${northEast.lat}&minLon=${southWest.lng}&maxLon=${northEast.lng}&maxCount=64`).subscribe(stops => {
 				if (this.markerGroup) {
 					this.markerGroup.clearLayers();
-					data.list.forEach(stopExtension => {
-						if (stopExtension.routes.length > 0) {
-							const marker = Leaflet.marker([stopExtension.stop.lat, stopExtension.stop.lon], {icon: createIcon(primaryColor, stopExtension.direction), riseOnHover: true});
+					stops.forEach(stop => {
+						if (stop.routes.length > 0) {
+							const marker = Leaflet.marker([stop.lat, stop.lon], {icon: createIcon(primaryColor), riseOnHover: true});
 							marker.bindPopup(`
 								<div class="column gap-small">
-									<strong>${stopExtension.stop.name}</strong>
-									<div>${stopExtension.routes.join(", ")}</div>
+									<strong>${stop.nameTc} ${stop.nameEn}</strong>
+									<div>${stop.routes.join(", ")}</div>
 								</div>
 							`, {closeButton: false});
 							marker.on("mouseover", () => marker.openPopup());
 							marker.on("mouseout", () => marker.closePopup());
-							marker.on("click", () => this.arrivalsService.stopClicked.emit(stopExtension));
+							marker.on("click", () => this.arrivalsService.stopClicked.emit(stop));
 							this.markerGroup?.addLayer(marker);
 						}
 					});
