@@ -82,14 +82,14 @@ public final class MtrConsolidationService {
 
 					try (final StringReader reader = new StringReader(cleanedCsvString)) {
 						new CsvToBeanBuilder<CsvStop>(reader).withType(CsvStop.class).withIgnoreLeadingWhiteSpace(true).build().forEach(csvStop -> {
-							final String stopOrStationCode = csvStop.getStopOrStationCode();
-							if (stopOrStationCode != null && !stopOrStationCode.isEmpty()) {
-								stopsByCode.computeIfAbsent(stopOrStationCode, key -> new StopDTO(
-										stopOrStationCode,
+							final String stopOrStationId = csvStop.getStopOrStationId();
+							if (stopOrStationId != null && !stopOrStationId.isEmpty()) {
+								stopsByCode.computeIfAbsent(stopOrStationId, key -> new StopDTO(
+										stopOrStationId,
 										csvStop.chineseName.replace("(", "（").replace(")", "）"),
 										csvStop.englishName,
 										new HashSet<>()
-								)).lines.add(csvStop.lineCode);
+								)).routes.add(csvStop.lineCode);
 							}
 						});
 					}
@@ -101,11 +101,9 @@ public final class MtrConsolidationService {
 					final Map<String, Stop> stopsByPageTitleWithoutCoordinates = new HashMap<>();
 
 					stops.forEach(stop -> {
-						final List<String> formattedStopId = new ArrayList<>();
-						formattedStopId.add(provider.toString());
-						formattedStopId.add(stop.code);
-						formattedStopId.addAll(stop.lines);
-						stopsByPageTitleWithoutCoordinates.put(SPECIAL_NAMES.getOrDefault(stop.nameTc, stop.nameTc + "站"), new Stop(String.join("_", formattedStopId), stop.nameEn, stop.nameTc, 0, 0, provider));
+						final List<String> routes = new ArrayList<>(stop.routes);
+						Collections.sort(routes);
+						stopsByPageTitleWithoutCoordinates.put(SPECIAL_NAMES.getOrDefault(stop.nameTc, stop.nameTc + "站"), new Stop(String.format("%s_%s", provider, stop.id), stop.nameEn, stop.nameTc, 0, 0, routes, provider));
 					});
 
 					return fetchWikipediaCoordinatesRecursive(String.join("|", stopsByPageTitleWithoutCoordinates.keySet()), null).flatMapIterable(wikipediaPages -> {
@@ -117,7 +115,7 @@ public final class MtrConsolidationService {
 							if (coordinates.isEmpty()) {
 								log.error("Coordinates not found for [{}]", page.title);
 							} else {
-								resultStops.add(new Stop(existingStop.getId(), existingStop.getNameEn(), existingStop.getNameTc(), coordinates.getFirst().lat, coordinates.getFirst().lon, provider));
+								resultStops.add(new Stop(existingStop.getId(), existingStop.getNameEn(), existingStop.getNameTc(), coordinates.getFirst().lat, coordinates.getFirst().lon, existingStop.getRoutes(), provider));
 							}
 						});
 
@@ -170,8 +168,8 @@ public final class MtrConsolidationService {
 		private String stationCode;
 
 		@Nullable
-		@CsvBindByName(column = "Stop Code")
-		private String stopCode;
+		@CsvBindByName(column = "Stop ID")
+		private Integer stopId;
 
 		@CsvBindByName(column = "Chinese Name")
 		private String chineseName;
@@ -180,12 +178,12 @@ public final class MtrConsolidationService {
 		private String englishName;
 
 		@Nullable
-		private String getStopOrStationCode() {
-			return stationCode == null ? stopCode : stationCode;
+		private String getStopOrStationId() {
+			return stopId == null ? stationCode : stopId.toString();
 		}
 	}
 
-	private record StopDTO(String code, String nameTc, String nameEn, Set<String> lines) {
+	private record StopDTO(String id, String nameTc, String nameEn, Set<String> routes) {
 	}
 
 	private record WikipediaDTO(WikipediaQueryDTO query, @Nullable @JsonProperty("continue") WikipediaContinueDTO cont) {

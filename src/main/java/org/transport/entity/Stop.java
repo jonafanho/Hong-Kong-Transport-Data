@@ -6,6 +6,8 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.transport.type.Provider;
 
+import java.util.List;
+
 @Entity
 @Table
 @Getter
@@ -19,6 +21,7 @@ public final class Stop {
 	private String nameTc;
 	private double lat;
 	private double lon;
+	private List<String> routes;
 	@Enumerated(EnumType.STRING)
 	private Provider provider;
 

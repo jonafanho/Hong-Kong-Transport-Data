@@ -6,7 +6,6 @@ import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.event.EventListener;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
-import org.springframework.web.reactive.function.client.WebClientResponseException;
 import reactor.core.publisher.Flux;
 import reactor.core.scheduler.Schedulers;
 import reactor.util.retry.Retry;
@@ -20,18 +19,11 @@ import java.time.Duration;
 public final class ConsolidationService {
 
 	private final ConsolidationPersistenceService consolidationPersistenceService;
-	private final KmbConsolidationService kmbConsolidationService;
-	private final CtbConsolidationService ctbConsolidationService;
+	private final BusConsolidationService busConsolidationService;
 	private final MtrConsolidationService mtrConsolidationService;
 
-	public static final RetryBackoffSpec RETRY_BACKOFF_SPEC = Retry.backoff(10, Duration.ofSeconds(1)).filter(throwable -> {
-		if (throwable instanceof WebClientResponseException webClientResponseException) {
-			return webClientResponseException.getStatusCode().is5xxServerError();
-		} else {
-			return true;
-		}
-	}).jitter(0.5);
-	public static final int CONCURRENCY_LIMIT = 20;
+	public static final RetryBackoffSpec RETRY_BACKOFF_SPEC = Retry.backoff(10, Duration.ofSeconds(1)).jitter(0.5);
+	public static final int CONCURRENCY_LIMIT = 5;
 
 	@EventListener(ApplicationReadyEvent.class)
 	public void runOnStartup() {
@@ -40,19 +32,24 @@ public final class ConsolidationService {
 
 	@Scheduled(cron = "0 30 5 * * *", zone = "Asia/Hong_Kong") // Update every day at 5:30 am HKT
 	public void consolidate() {
-		log.info("Starting data consolidation");
+		if (consolidationPersistenceService.canConsolidate()) {
+			log.info("Starting data consolidation");
+			final long startMillis = System.currentTimeMillis();
 
-		Flux.merge(
-						kmbConsolidationService.consolidate(),
-						ctbConsolidationService.consolidate(),
-						mtrConsolidationService.consolidateMtr(),
-						mtrConsolidationService.consolidateLrt()
-				)
-				.collectList()
-				.publishOn(Schedulers.boundedElastic())
-				.doOnNext(consolidationPersistenceService::persistStops)
-				.block();
+			Flux.merge(
+							busConsolidationService.consolidateKmb(),
+							busConsolidationService.consolidateCtb(),
+							mtrConsolidationService.consolidateMtr(),
+							mtrConsolidationService.consolidateLrt()
+					)
+					.collectList()
+					.publishOn(Schedulers.boundedElastic())
+					.doOnNext(consolidationPersistenceService::persistStops)
+					.block();
 
-		log.info("Data consolidation complete");
+			log.info("Data consolidation complete in {} seconds", (System.currentTimeMillis() - startMillis) / 1000);
+		} else {
+			log.info("Skipping data consolidation");
+		}
 	}
 }
