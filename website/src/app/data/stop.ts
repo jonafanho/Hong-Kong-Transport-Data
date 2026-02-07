@@ -1,9 +1,9 @@
 export interface Stop {
-	readonly id: string;
-	readonly nameEn: string;
-	readonly nameTc: string;
+	readonly ids: string[];
+	readonly namesEn: string[];
+	readonly namesTc: string[];
 	readonly lat: number;
 	readonly lon: number;
 	readonly routes: string[];
-	readonly provider: string;
+	readonly providers: string[];
 }

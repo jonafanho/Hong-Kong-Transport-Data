@@ -1,16 +1,15 @@
-package org.transport.service;
+package org.transport.consolidation;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.opencsv.bean.CsvBindByName;
 import com.opencsv.bean.CsvToBeanBuilder;
-import lombok.AllArgsConstructor;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.Nullable;
-import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.transport.entity.Stop;
+import org.transport.service.ConsolidationService;
 import org.transport.type.Provider;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -19,14 +18,11 @@ import java.io.StringReader;
 import java.util.*;
 
 @Slf4j
-@AllArgsConstructor
-@Service
-public final class MtrConsolidationService {
+public abstract class TrainConsolidationBase extends ConsolidationBase {
 
 	private final WebClient webClient;
+	private final String stopsUrl;
 
-	private static final String MTR_STATIONS_URL = "https://opendata.mtr.com.hk/data/mtr_lines_and_stations.csv";
-	private static final String LRT_STOPS_URL = "https://opendata.mtr.com.hk/data/light_rail_routes_and_stops.csv";
 	private static final Map<String, List<WikipediaCoordinateDTO>> SPECIAL_COORDINATES = Map.of("豐景園", List.of(new WikipediaCoordinateDTO(22.3833, 113.972889)));
 	private static final Map<String, String> SPECIAL_NAMES = new HashMap<>();
 
@@ -62,17 +58,15 @@ public final class MtrConsolidationService {
 		SPECIAL_NAMES.put("龍門", "龍門站 (香港)");
 	}
 
-	public Flux<Stop> consolidateMtr() {
-		return consolidate(MTR_STATIONS_URL, Provider.MTR);
+	protected TrainConsolidationBase(WebClient webClient, String stopsUrl, Provider provider) {
+		super(provider);
+		this.webClient = webClient;
+		this.stopsUrl = stopsUrl;
 	}
 
-	public Flux<Stop> consolidateLrt() {
-		return consolidate(LRT_STOPS_URL, Provider.LRT);
-	}
-
-	private Flux<Stop> consolidate(String url, Provider provider) {
+	public final Flux<Stop> consolidate() {
 		return webClient.get()
-				.uri(url)
+				.uri(stopsUrl)
 				.retrieve()
 				.bodyToMono(String.class)
 				.retryWhen(ConsolidationService.RETRY_BACKOFF_SPEC)
@@ -99,12 +93,7 @@ public final class MtrConsolidationService {
 				.buffer(40)
 				.flatMap(stops -> {
 					final Map<String, Stop> stopsByPageTitleWithoutCoordinates = new HashMap<>();
-
-					stops.forEach(stop -> {
-						final List<String> routes = new ArrayList<>(stop.routes);
-						Collections.sort(routes);
-						stopsByPageTitleWithoutCoordinates.put(SPECIAL_NAMES.getOrDefault(stop.nameTc, stop.nameTc + "站"), new Stop(String.format("%s_%s", provider, stop.id), stop.nameEn, stop.nameTc, 0, 0, routes, provider));
-					});
+					stops.forEach(stop -> stopsByPageTitleWithoutCoordinates.put(SPECIAL_NAMES.getOrDefault(stop.nameTc, stop.nameTc + "站"), new Stop(String.format("%s_%s", provider, stop.id), stop.nameEn, stop.nameTc, 0, 0, new ArrayList<>(stop.routes), provider)));
 
 					return fetchWikipediaCoordinatesRecursive(String.join("|", stopsByPageTitleWithoutCoordinates.keySet()), null).flatMapIterable(wikipediaPages -> {
 						final List<Stop> resultStops = new ArrayList<>();

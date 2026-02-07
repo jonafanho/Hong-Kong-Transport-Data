@@ -35,7 +35,7 @@ export class ArrivalsService {
 	}
 
 	getName() {
-		return this.stop?.nameTc ?? "";
+		return "";
 	}
 
 	getRoutes() {
@@ -43,7 +43,7 @@ export class ArrivalsService {
 	}
 
 	getId() {
-		return this.stop?.id;
+		return "";
 	}
 
 	getArrivals() {

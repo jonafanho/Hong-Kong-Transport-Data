@@ -2,6 +2,7 @@ package org.transport.controller;
 
 import lombok.AllArgsConstructor;
 import org.springframework.web.bind.annotation.*;
+import org.transport.entity.ProviderProperties;
 import org.transport.entity.Stop;
 import org.transport.service.PersistenceService;
 
@@ -20,17 +21,9 @@ public final class StopController {
 		return persistenceService.getStops(minLat, maxLat, minLon, maxLon, maxCount);
 	}
 
-	@GetMapping("/centerPoint")
-	public LatLon centerPoint() {
-		double latSum = 0;
-		double lonSum = 0;
-		int count = 0;
-		for (final Stop stop : persistenceService.getAllStops()) {
-			latSum += stop.getLat();
-			lonSum += stop.getLon();
-			count++;
-		}
-		return count == 0 ? new LatLon(0, 0) : new LatLon(latSum / count, lonSum / count);
+	@GetMapping("/getProviderProperties")
+	public List<ProviderProperties> getProviderProperties() {
+		return persistenceService.getAllProviderProperties();
 	}
 
 	public record LatLon(double lat, double lon) {

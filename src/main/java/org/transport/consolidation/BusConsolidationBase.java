@@ -1,12 +1,11 @@
-package org.transport.service;
+package org.transport.consolidation;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.Nullable;
-import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.transport.entity.Stop;
+import org.transport.service.ConsolidationService;
 import org.transport.type.Provider;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -14,28 +13,22 @@ import reactor.core.publisher.Mono;
 import java.util.*;
 
 @Slf4j
-@AllArgsConstructor
-@Service
-public final class BusConsolidationService {
+public abstract class BusConsolidationBase extends ConsolidationBase {
 
 	private final WebClient webClient;
+	private final String routesUrl;
+	private final String routeStopsUrl;
+	private final String stopUrl;
 
-	private static final String KMB_ROUTES_URL = "https://data.etabus.gov.hk/v1/transport/kmb/route";
-	private static final String KMB_ROUTE_STOPS_URL = "https://data.etabus.gov.hk/v1/transport/kmb/route-stop/%s/%s";
-	private static final String KMB_STOP_URL = "https://data.etabus.gov.hk/v1/transport/kmb/stop/%s";
-	private static final String CTB_ROUTES_URL = "https://rt.data.gov.hk/v2/transport/citybus/route/ctb";
-	private static final String CTB_ROUTE_STOPS_URL = "https://rt.data.gov.hk/v2/transport/citybus/route-stop/ctb/%s/%s";
-	private static final String CTB_STOP_URL = "https://rt.data.gov.hk/v2/transport/citybus/stop/%s";
-
-	public Flux<Stop> consolidateKmb() {
-		return consolidate(KMB_ROUTES_URL, KMB_ROUTE_STOPS_URL, KMB_STOP_URL, Provider.KMB);
+	protected BusConsolidationBase(WebClient webClient, String routesUrl, String routeStopsUrl, String stopUrl, Provider provider) {
+		super(provider);
+		this.webClient = webClient;
+		this.routesUrl = routesUrl;
+		this.routeStopsUrl = routeStopsUrl;
+		this.stopUrl = stopUrl;
 	}
 
-	public Flux<Stop> consolidateCtb() {
-		return consolidate(CTB_ROUTES_URL, CTB_ROUTE_STOPS_URL, CTB_STOP_URL, Provider.CTB);
-	}
-
-	private Flux<Stop> consolidate(String routesUrl, String routeStopsUrl, String stopUrl, Provider provider) {
+	public final Flux<Stop> consolidate() {
 		return webClient.get()
 				.uri(routesUrl)
 				.retrieve()
@@ -59,21 +52,17 @@ public final class BusConsolidationService {
 					return routesForStop;
 				})
 				.flatMapIterable(HashMap::values)
-				.flatMap(stopWithRoutes -> {
-					final List<String> routes = new ArrayList<>(stopWithRoutes.routes);
-					Collections.sort(routes);
-					return webClient.get()
-							.uri(String.format(stopUrl, stopWithRoutes.stopId))
-							.retrieve()
-							.bodyToMono(StopResponse.class)
-							.retryWhen(ConsolidationService.RETRY_BACKOFF_SPEC)
-							.map(StopResponse::data)
-							.map(stop -> new Stop(String.format("%s_%s", provider, stop.stop), stop.name_en, stop.name_tc, stop.lat, stop.lon, routes, provider))
-							.onErrorResume(e -> {
-								log.error("[{}] Failed to fetch stop [{}]", provider, stopWithRoutes, e);
-								return Mono.empty();
-							});
-				}, ConsolidationService.CONCURRENCY_LIMIT);
+				.flatMap(stopWithRoutes -> webClient.get()
+						.uri(String.format(stopUrl, stopWithRoutes.stopId))
+						.retrieve()
+						.bodyToMono(StopResponse.class)
+						.retryWhen(ConsolidationService.RETRY_BACKOFF_SPEC)
+						.map(StopResponse::data)
+						.map(stop -> new Stop(String.format("%s_%s", provider, stop.stop), stop.name_en, stop.name_tc, stop.lat, stop.lon, new ArrayList<>(stopWithRoutes.routes), provider))
+						.onErrorResume(e -> {
+							log.error("[{}] Failed to fetch stop [{}]", provider, stopWithRoutes, e);
+							return Mono.empty();
+						}), ConsolidationService.CONCURRENCY_LIMIT);
 	}
 
 	private record RoutesResponse(List<RouteDTO> data) {
