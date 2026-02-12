@@ -72,13 +72,13 @@ public abstract class TrainConsolidationBase extends ConsolidationBase {
 				.retryWhen(ConsolidationService.RETRY_BACKOFF_SPEC)
 				.flatMapIterable(csvString -> {
 					final String cleanedCsvString = csvString.startsWith("\uFEFF") ? csvString.substring(1) : csvString;
-					final Map<String, StopDTO> stopsByCode = new HashMap<>();
+					final Map<String, StopResponseDTO> stopsByCode = new HashMap<>();
 
 					try (final StringReader reader = new StringReader(cleanedCsvString)) {
 						new CsvToBeanBuilder<CsvStop>(reader).withType(CsvStop.class).withIgnoreLeadingWhiteSpace(true).build().forEach(csvStop -> {
 							final String stopOrStationId = csvStop.getStopOrStationId();
 							if (stopOrStationId != null && !stopOrStationId.isEmpty()) {
-								stopsByCode.computeIfAbsent(stopOrStationId, key -> new StopDTO(
+								stopsByCode.computeIfAbsent(stopOrStationId, key -> new StopResponseDTO(
 										stopOrStationId,
 										csvStop.chineseName.replace("(", "（").replace(")", "）"),
 										csvStop.englishName,
@@ -172,7 +172,7 @@ public abstract class TrainConsolidationBase extends ConsolidationBase {
 		}
 	}
 
-	private record StopDTO(String id, String nameTc, String nameEn, Set<String> routes) {
+	private record StopResponseDTO(String id, String nameTc, String nameEn, Set<String> routes) {
 	}
 
 	private record WikipediaDTO(WikipediaQueryDTO query, @Nullable @JsonProperty("continue") WikipediaContinueDTO cont) {

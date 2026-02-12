@@ -21,7 +21,7 @@ public class PersistenceService {
 
 	private final StopRepository stopRepository;
 	private final ProviderPropertiesRepository providerPropertiesRepository;
-	private static final int REFRESH_INTERVAL = (24 - 2) * 60 * 60 * 1000;
+	private static final int REFRESH_INTERVAL = 12 * 60 * 60 * 1000;
 
 	@Transactional
 	public boolean canConsolidate(Provider provider) {
@@ -39,8 +39,13 @@ public class PersistenceService {
 	}
 
 	@Transactional
-	public List<Stop> getStops(double minLat, double maxLat, double minLon, double maxLon, int maxCount) {
-		return stopRepository.findByLatBetweenAndLonBetween(minLat, maxLat, minLon, maxLon, Pageable.ofSize(maxCount)).getContent();
+	public List<Stop> getStops(double minLat, double maxLat, double minLon, double maxLon) {
+		return stopRepository.findByLatBetweenAndLonBetween(minLat, maxLat, minLon, maxLon, Pageable.ofSize(256)).getContent();
+	}
+
+	@Transactional
+	public Stop getStop(String stopId) {
+		return stopRepository.getReferenceById(stopId);
 	}
 
 	@Transactional

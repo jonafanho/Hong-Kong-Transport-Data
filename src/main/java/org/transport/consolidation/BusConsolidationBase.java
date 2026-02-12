@@ -48,7 +48,9 @@ public abstract class BusConsolidationBase extends ConsolidationBase {
 							return Mono.empty();
 						}), ConsolidationService.CONCURRENCY_LIMIT)
 				.reduce(new HashMap<String, StopWithRoutes>(), (routesForStop, stopWithRoutes) -> {
-					routesForStop.computeIfAbsent(stopWithRoutes.stopId, key -> new StopWithRoutes(stopWithRoutes.stopId, new HashSet<>())).routes.addAll(stopWithRoutes.routes);
+					if (stopWithRoutes.stopId != null) {
+						routesForStop.computeIfAbsent(stopWithRoutes.stopId, key -> new StopWithRoutes(stopWithRoutes.stopId, new HashSet<>())).routes.addAll(stopWithRoutes.routes);
+					}
 					return routesForStop;
 				})
 				.flatMapIterable(HashMap::values)
@@ -77,10 +79,10 @@ public abstract class BusConsolidationBase extends ConsolidationBase {
 	private record RouteStopDTO(String stop) {
 	}
 
-	private record StopResponse(StopDTO data) {
+	private record StopResponse(StopResponseDTO data) {
 	}
 
-	private record StopDTO(String stop, String name_en, String name_tc, double lat, @JsonProperty("long") double lon) {
+	private record StopResponseDTO(String stop, String name_en, String name_tc, double lat, @JsonProperty("long") double lon) {
 	}
 
 	private record RouteWithDirection(RouteDTO route, String direction) {
