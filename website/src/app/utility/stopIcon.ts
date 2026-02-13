@@ -1,4 +1,5 @@
 import * as Leaflet from "leaflet";
+import {Provider} from "../data/provider";
 
 const iconSize = 16;
 const iconShadowRadius = iconSize / 4;
@@ -186,7 +187,75 @@ const lrtLogo = `
 	</svg>
 `;
 
-export function createIcon(providers: string[]) {
+export function getProviderColor(provider: Provider, routeShortName?: string) {
+	// https://hkrail.fandom.com/wiki/%E6%B8%AF%E9%90%B5%E8%B7%AF%E7%B6%AB
+	switch (provider) {
+		case "KMB":
+			return "#333333";
+		case "CTB":
+			return "#999999";
+		case "GMB":
+			return "#339933";
+		case "MTR":
+			switch (routeShortName) {
+				case "EAL":
+					return "#53B7E8";
+				case "KTL":
+					return "#00AB4E";
+				case "TWL":
+					return "#ED1C24";
+				case "ISL":
+					return "#007DC5";
+				case "TCL":
+					return "#F7943E";
+				case "TKL":
+					return "#7E459B";
+				case "DRL":
+					return "#F173AC";
+				case "SIL":
+					return "#B5BD00";
+				case "TML":
+					return "#923011";
+				case "AEL":
+					return "#00888A";
+				default:
+					return "#FFFFFF";
+			}
+		case "LRT":
+			switch (routeShortName) {
+				case "505":
+					return "#DA2128";
+				case "507":
+				case "507P":
+					return "#00A650";
+				case "610":
+					return "#551B14";
+				case "614":
+					return "#00C0F3";
+				case "614P":
+					return "#F4858D";
+				case "615":
+					return "#FFDD00";
+				case "615P":
+					return "#006684";
+				case "705":
+					return "#72BF44";
+				case "706":
+					return "#B27AB4";
+				case "751":
+				case "751P":
+					return "#F5821F";
+				case "761P":
+					return "#6F2B91";
+				default:
+					return "#FFFFFF";
+			}
+		default:
+			return "#FFFFFF";
+	}
+}
+
+export function createIcon(providers: Provider[]) {
 	const icons: string[] = [];
 	const hasMTR = providers.includes("MTR");
 	const hasLRT = providers.includes("LRT");
@@ -199,13 +268,13 @@ export function createIcon(providers: string[]) {
 
 	const colors: string[] = [];
 	if (providers.includes("KMB")) {
-		colors.push("#333333");
+		colors.push(getProviderColor("KMB"));
 	}
 	if (providers.includes("CTB")) {
-		colors.push("#999999");
+		colors.push(getProviderColor("CTB"));
 	}
 	if (providers.includes("GMB")) {
-		colors.push("#339933");
+		colors.push(getProviderColor("GMB"));
 	}
 	if (colors.length > 0) {
 		if (colors.length === 1) {

@@ -32,6 +32,7 @@ public final class MTRArrival extends ArrivalBase {
 
 	@Override
 	public Flux<ArrivalDTO> getArrivals(String stopId) {
+		final long millis = System.currentTimeMillis();
 		return Mono.fromCallable(() -> mtrConsolidation.getStopFromCache(stopId))
 				.subscribeOn(Schedulers.boundedElastic())
 				.flatMapMany(stop -> Flux.fromIterable(stop.getRoutes()).flatMap(route -> webClientHelperService.create(ArrivalResponse.class, ARRIVAL_URL, route, stopId).flatMapIterable(arrivalResponse -> {
@@ -49,14 +50,18 @@ public final class MTRArrival extends ArrivalBase {
 								etaList.addAll(data.DOWN);
 							}
 
-							etaList.forEach(eta -> arrivals.add(new ArrivalDTO(
-									route,
-									mtrConsolidation.getStopFromCache(eta.dest).getNameEn() + ("RAC".equals(eta.route) ? " via Racecourse" : ""),
-									mtrConsolidation.getStopFromCache(eta.dest).getNameTc() + ("RAC".equals(eta.route) ? "經馬場" : ""),
-									Instant.parse(eta.time.trim().replace(" ", "T") + "+08:00").toEpochMilli(),
-									true,
-									provider
-							)));
+							etaList.forEach(eta -> {
+								final long arrival = Instant.parse(eta.time.trim().replace(" ", "T") + "+08:00").toEpochMilli();
+								arrivals.add(new ArrivalDTO(
+										route,
+										mtrConsolidation.getStopFromCache(eta.dest).getNameEn() + ("RAC".equals(eta.route) ? " via Racecourse" : ""),
+										mtrConsolidation.getStopFromCache(eta.dest).getNameTc() + ("RAC".equals(eta.route) ? "經馬場" : ""),
+										arrival,
+										(int) Math.max(0, (arrival - millis) / 60000),
+										true,
+										provider
+								));
+							});
 						});
 					}
 

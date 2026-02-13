@@ -31,6 +31,7 @@ public final class GMBArrival extends ArrivalBase {
 
 	@Override
 	public Flux<ArrivalDTO> getArrivals(String stopId) {
+		final long millis = System.currentTimeMillis();
 		return Mono.fromCallable(() -> gmbConsolidation.getRouteIdMappingFromCache(String.format("%s_%s", provider, stopId)))
 				.subscribeOn(Schedulers.boundedElastic())
 				.flatMapMany(routeIdMapping -> webClientHelperService.create(ArrivalResponse.class, ARRIVAL_URL, stopId).flatMapIterable(arrivalResponse -> {
@@ -39,14 +40,18 @@ public final class GMBArrival extends ArrivalBase {
 					arrivalResponse.data.forEach(data -> {
 						if (data.eta != null && !data.eta.isEmpty()) {
 							final RouteMapping routeMapping = routeIdMapping.getOrDefault(data.route_id, new RouteMapping("", "", ""));
-							data.eta.forEach(eta -> arrivals.add(new ArrivalDTO(
-									routeMapping.getRouteShortName(),
-									routeMapping.getRouteLongNameEn(),
-									routeMapping.getRouteLongNameTc(),
-									Instant.parse(eta.timestamp).toEpochMilli(),
-									eta.remarks_en == null || !eta.remarks_en.toLowerCase().contains("scheduled"),
-									provider
-							)));
+							data.eta.forEach(eta -> {
+								final long arrival = Instant.parse(eta.timestamp).toEpochMilli();
+								arrivals.add(new ArrivalDTO(
+										routeMapping.getRouteShortName(),
+										routeMapping.getRouteLongNameEn(),
+										routeMapping.getRouteLongNameTc(),
+										arrival,
+										(int) Math.max(0, (arrival - millis) / 60000),
+										eta.remarks_en == null || !eta.remarks_en.toLowerCase().contains("scheduled"),
+										provider
+								));
+							});
 						}
 					});
 

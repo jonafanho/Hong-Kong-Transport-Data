@@ -6,6 +6,7 @@ import {url} from "../../utility/settings";
 import {createIcon} from "../../utility/stopIcon";
 import {Stop} from "../../data/stop";
 import {ArrivalsService} from "../../service/arrivals.service";
+import {sortAndTrim} from "../../utility/utilities";
 
 @Component({
 	selector: "app-map",
@@ -78,10 +79,10 @@ export class MapComponent implements AfterViewInit {
 						marker.bindPopup(`
 								<div class="column gap-small">
 									<div class="column"> 
-										<strong>${MapComponent.sortAndTrim(stop.namesTc, 5)}</strong>
-										<strong>${MapComponent.sortAndTrim(stop.namesEn, 5)}</strong>
+										<strong>${sortAndTrim(stop.namesTc, 5)}</strong>
+										<strong>${sortAndTrim(stop.namesEn, 5)}</strong>
 									</div>
-									<div>${MapComponent.sortAndTrim(stop.routes, 100)}</div>
+									<div>${sortAndTrim(stop.routes, 100)}</div>
 								</div>
 							`, {closeButton: false});
 						marker.on("mouseover", () => marker.openPopup());
@@ -92,21 +93,5 @@ export class MapComponent implements AfterViewInit {
 				}
 			});
 		}
-	}
-
-	private static sortAndTrim(list: string[], count: number) {
-		list.sort((item1, item2) => {
-			const item1FirstNumbers = /\d+/.exec(item1);
-			const item2FirstNumbers = /\d+/.exec(item2);
-			if (item1FirstNumbers && !item2FirstNumbers) {
-				return -1;
-			} else if (!item1FirstNumbers && item2FirstNumbers) {
-				return 1;
-			} else {
-				const difference = item1FirstNumbers && item2FirstNumbers ? parseInt(item1FirstNumbers[0]) - parseInt(item2FirstNumbers[0]) : 0;
-				return difference === 0 ? item1.localeCompare(item2) : difference;
-			}
-		});
-		return list.slice(0, count).join(", ") + (count < list.length ? `... (+${list.length - count})` : "");
 	}
 }

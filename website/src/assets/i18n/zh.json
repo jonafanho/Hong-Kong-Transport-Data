@@ -1,11 +1,8 @@
 {
-	"status.scheduled": "預定班次",
-	"status.on-time": "準時到達",
-	"status.early": "提早 {{minutes}} 分鐘",
-	"status.delay": "延遲 {{minutes}} 分鐘",
-	"arrivals.frequency": "每 {{minutes}} 分鐘",
-	"button.show-more-arrivals": "顯示更多班次",
-	"arrivals.no-arrivals": "{{hours}} 小時之内沒有班次。",
+	"title.arrivals": "班次",
+	"field.routes": "路綫",
+	"arrivals.arriving": "即將到達",
+	"arrivals.no-arrivals": "沒有班次",
 	"menu.light-theme": "淺色主題",
 	"menu.dark-theme": "深色主題"
 }

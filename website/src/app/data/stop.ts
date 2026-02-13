@@ -1,3 +1,5 @@
+import {Provider} from "./provider";
+
 export interface Stop {
 	readonly ids: string[];
 	readonly namesEn: string[];
@@ -5,5 +7,5 @@ export interface Stop {
 	readonly lat: number;
 	readonly lon: number;
 	readonly routes: string[];
-	readonly providers: string[];
+	readonly providers: Provider[];
 }

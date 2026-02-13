@@ -3,15 +3,11 @@
 }
 
 .arrivals {
+	border-left: 4px solid;
 	overflow-wrap: break-word;
 }
 
 .arrival-fixed-width-small {
-	max-width: 4rem;
-	min-width: 4rem;
-}
-
-.arrival-fixed-width-medium {
 	max-width: 6rem;
 	min-width: 6rem;
 }
@@ -21,11 +17,6 @@
 	min-width: 8rem;
 }
 
-.arrival-fixed-width-extra-large {
-	max-width: 10rem;
-	min-width: 10rem;
-}
-
 .arrival-heading {
 	font-size: 2rem;
 	text-align: center;
@@ -33,37 +24,12 @@
 
 .arrival-trailing {
 	font-size: 1.5rem;
-	text-align: right;
 }
 
-.arrival-small {
+.small-text {
 	font-size: 0.8rem;
 }
 
 .bold-text {
 	font-weight: bold;
-}
-
-.deviation {
-	color: white;
-	border-radius: 0.3rem;
-	margin: 0.2rem 0;
-	padding: 0.3rem 0.5rem;
-	text-align: center;
-}
-
-.deviation.scheduled {
-	background-color: darkgray;
-}
-
-.deviation.on-time {
-	background-color: var(--p-primary-color);
-}
-
-.deviation.early {
-	background-color: #A35650;
-}
-
-.deviation.delay {
-	background-color: #4F4BA9;
 }

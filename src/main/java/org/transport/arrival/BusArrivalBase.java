@@ -20,12 +20,22 @@ public abstract class BusArrivalBase extends ArrivalBase {
 	}
 
 	protected final Flux<ArrivalDTO> getRawArrivals(String url) {
+		final long millis = System.currentTimeMillis();
 		return webClientHelperService.create(ArrivalResponse.class, url)
 				.flatMapIterable(arrivalResponse -> {
 					final List<ArrivalDTO> arrivals = new ArrayList<>();
 					arrivalResponse.data.forEach(data -> {
 						if (data.eta != null && !data.eta.isEmpty()) {
-							arrivals.add(new ArrivalDTO(data.route, data.dest_en, data.dest_tc, Instant.parse(data.eta).toEpochMilli(), !data.rmk_en.toLowerCase().contains("scheduled"), provider));
+							final long arrival = Instant.parse(data.eta).toEpochMilli();
+							arrivals.add(new ArrivalDTO(
+									data.route,
+									data.dest_en,
+									data.dest_tc,
+									arrival,
+									(int) Math.max(0, (arrival - millis) / 60000),
+									!data.rmk_en.toLowerCase().contains("scheduled"),
+									provider
+							));
 						}
 					});
 					return arrivals;

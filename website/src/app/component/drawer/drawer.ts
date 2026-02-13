@@ -5,7 +5,9 @@ import {DividerModule} from "primeng/divider";
 import {TranslocoDirective} from "@jsverse/transloco";
 import {ProgressBarModule} from "primeng/progressbar";
 import {ButtonModule} from "primeng/button";
-import {MINUTES_PER_HOUR} from "../../utility/constants";
+import {formatAbsoluteTime, sortAndTrim} from "../../utility/utilities";
+import {Arrival} from "../../data/arrival";
+import {getProviderColor} from "../../utility/stopIcon";
 
 @Component({
 	selector: "app-drawer",
@@ -32,35 +34,37 @@ export class DrawerComponent {
 		this.arrivalsService.stopClicked.emit();
 	}
 
-	getName() {
-		return this.arrivalsService.getName();
-	}
-
-	getRouteList() {
-		return this.arrivalsService.getRoutes().join(", ");
-	}
-
-	getId() {
-		return this.arrivalsService.getId();
-	}
-
 	getArrivals() {
-		return this.arrivalsService.getArrivals();
+		return this.arrivalsService.arrivals();
+	}
+
+	getRelativeTimes(index: number) {
+		return this.arrivalsService.relativeTimes()[index];
 	}
 
 	getLoading() {
-		return this.arrivalsService.getLoading();
+		return this.arrivalsService.loading();
 	}
 
-	getAddMinutesAfterLoading() {
-		return this.arrivalsService.getAddMinutesAfterLoading();
+	getNames() {
+		const stop = this.getStop();
+		return stop ? [sortAndTrim(stop.namesTc, 100), sortAndTrim(stop.namesEn, 100)] : [];
 	}
 
-	addMinutesAfter() {
-		this.arrivalsService.addMinutesAfter();
+	getRoutes() {
+		const stop = this.getStop();
+		return stop ? sortAndTrim(stop.routes, 100) : "";
 	}
 
-	getHoursAfter() {
-		return Math.floor(this.arrivalsService.getMinutesAfter() / MINUTES_PER_HOUR);
+	getColor(arrival: Arrival) {
+		return getProviderColor(arrival.provider, arrival.routeShortName);
+	}
+
+	formatDate(arrival: Arrival) {
+		return arrival.arrival === 0 ? "" : formatAbsoluteTime(arrival.arrival);
+	}
+
+	private getStop() {
+		return this.arrivalsService.stop();
 	}
 }

@@ -1,14 +1,10 @@
-<p-drawer *transloco="let t" [(visible)]="visible" [header]="getName()" position="right" [modal]="false" [style]="{width: '40rem', maxWidth: '100%'}" (onHide)="closeDrawer()">
+<p-drawer *transloco="let t" [(visible)]="visible" [header]="t('title.arrivals')" position="right" [modal]="false" [style]="{width: '40rem', maxWidth: '100%'}" (onHide)="closeDrawer()">
 	<div class="column wrapper">
-		<div class="column">
-			<div class="row gap padding-sides">
-				<div class="bold-text">{{ t("field.routes") }}</div>
-				<div>{{ getRouteList() }}</div>
-			</div>
-			<div class="row gap padding-sides">
-				<div class="bold-text">{{ t("field.stop-id") }}</div>
-				<div>{{ getId() }}</div>
-			</div>
+		<div class="column gap-small">
+			@for (name of getNames(); track $index) {
+				<div class="padding-sides bold-text">{{ name }}</div>
+			}
+			<div class="padding-sides small-text">{{ getRoutes() }}</div>
 		</div>
 		@if (getLoading()) {
 			<div class="progress-padding"></div>
@@ -18,46 +14,29 @@
 			<div class="column content">
 				@if (getArrivals().length === 0) {
 					<div class="column center">
-						<div>{{ t("arrivals.no-arrivals", {hours: getHoursAfter()}) }}</div>
+						<div>{{ t("arrivals.no-arrivals") }}</div>
 					</div>
 				}
 				@for (arrival of getArrivals(); track $index) {
-					@if ($index > 0) {
-						<p-divider/>
-					}
-					<div class="row gap center padding-sides arrivals">
-						<div class="arrival-heading arrival-fixed-width-medium bold-text">{{ arrival.routeName }}</div>
+					<div class="row gap center padding-sides arrivals" [style.border-left-color]="getColor(arrival)">
+						<div class="arrival-heading arrival-fixed-width-small bold-text">{{ arrival.routeShortName }}</div>
 						<div class="column spacing">
-							<div class="bold-text">{{ arrival.headsign }}</div>
-							<div class="row gap center arrival-small">
-								<div [class]="'arrival-fixed-width-medium deviation ' + arrival.deviationString">{{ t("status." + arrival.deviationString, {minutes: arrival.deviationMinutes}) }}</div>
-								<div>{{ arrival.vehicleId }}</div>
+							<div class="bold-text">{{ arrival.routeLongNameTc }}</div>
+							<div class="bold-text">{{ arrival.routeLongNameEn }}</div>
+							<div class="row gap">
+								<div class="small-text">{{ arrival.provider }}</div>
+								<div class="small-text">{{ formatDate(arrival) }}</div>
 							</div>
-							<div class="row gap arrival-small">
-								<div class="arrival-fixed-width-medium">{{ arrival.absoluteTimeFormatted }}</div>
-								<div>{{ arrival.vehicleDetails }}</div>
-							</div>
-							@for (frequency of arrival.frequencies; track $index) {
-								<div class="row gap arrival-small">
-									<div class="arrival-fixed-width-extra-large">{{ frequency.startTimeFormatted }} – {{ frequency.endTimeFormatted }}</div>
-									<div>{{ t("arrivals.frequency", {minutes: frequency.headwayMinutes}) }}</div>
-								</div>
-							}
 						</div>
-						@if (arrival.getRelativeTimeFormatted()) {
-							<div class="arrival-trailing arrival-fixed-width-large bold-text">{{ arrival.getRelativeTimeFormatted() }}</div>
-						}
+						<div class="row center arrival-trailing arrival-fixed-width-large bold-text">
+							@if (arrival.realtime) {
+								<i class="pi pi-wifi"></i>
+							}
+							<div class="spacing"></div>
+							<div>{{ getRelativeTimes($index) ?? t('arrivals.arriving') }}</div>
+						</div>
 					</div>
-				}
-				@if (getAddMinutesAfterLoading()) {
-					<div class="progress-padding"></div>
-					<p-progressBar mode="indeterminate" [style]="{ height: '6px' }"/>
-				} @else {
-					<div class="column center">
-						<p-divider/>
-						<p-button [label]="t('button.show-more-arrivals')" severity="secondary" (onClick)="addMinutesAfter()"/>
-						<br/>
-					</div>
+					<p-divider/>
 				}
 			</div>
 		}

@@ -1,13 +1,8 @@
 {
+	"title.arrivals": "Arrivals",
 	"field.routes": "Routes",
-	"field.stop-id": "Stop ID",
-	"status.scheduled": "Scheduled",
-	"status.on-time": "On time",
-	"status.early": "{{minutes}} min early",
-	"status.delay": "{{minutes}} min delay",
-	"arrivals.frequency": "Every {{minutes}} minutes",
-	"arrivals.no-arrivals": "No arrivals for the next {{hours}} hours.",
-	"button.show-more-arrivals": "Show More Arrivals",
+	"arrivals.arriving": "Arriving",
+	"arrivals.no-arrivals": "No Arrivals",
 	"menu.light-theme": "Light Theme",
 	"menu.dark-theme": "Dark Theme"
 }

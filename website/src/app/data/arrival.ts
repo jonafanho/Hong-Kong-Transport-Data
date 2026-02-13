@@ -1,33 +1,11 @@
-import {formatRelativeTime} from "../utility/utilities";
+import {Provider} from "./provider";
 
-export class Arrival {
-
-	constructor(
-		readonly routeName: string,
-		readonly headsign: string,
-		readonly deviationMinutes: number,
-		readonly deviationString: string,
-		private readonly absoluteTime: number,
-		readonly absoluteTimeFormatted: string,
-		private relativeTimeFormatted: string,
-		readonly frequencies: Frequency[],
-		readonly vehicleId: string,
-		readonly vehicleDetails: string,
-	) {
-	}
-
-	formatRelativeTime() {
-		const currentMillis = Date.now();
-		this.relativeTimeFormatted = formatRelativeTime(this.absoluteTime - currentMillis);
-	}
-
-	getRelativeTimeFormatted() {
-		return this.relativeTimeFormatted;
-	}
-}
-
-export class Frequency {
-	readonly startTimeFormatted!: string;
-	readonly endTimeFormatted!: string;
-	readonly headwayMinutes!: number;
+export interface Arrival {
+	readonly routeShortName: string;
+	readonly routeLongNameEn: string;
+	readonly routeLongNameTc: string;
+	readonly arrival: number;
+	readonly minutes: number;
+	readonly realtime: boolean;
+	readonly provider: Provider;
 }

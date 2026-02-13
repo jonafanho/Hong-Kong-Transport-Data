@@ -13,6 +13,22 @@ export function setCookie(name: string, value: string) {
 	document.cookie = `${name}=${value}; expires=${new Date(2999, 11, 31).toUTCString()}; path=/`;
 }
 
+export function sortAndTrim(list: string[], count: number) {
+	list.sort((item1, item2) => {
+		const item1FirstNumbers = /\d+/.exec(item1);
+		const item2FirstNumbers = /\d+/.exec(item2);
+		if (item1FirstNumbers && !item2FirstNumbers) {
+			return -1;
+		} else if (!item1FirstNumbers && item2FirstNumbers) {
+			return 1;
+		} else {
+			const difference = item1FirstNumbers && item2FirstNumbers ? parseInt(item1FirstNumbers[0]) - parseInt(item2FirstNumbers[0]) : 0;
+			return difference === 0 ? item1.localeCompare(item2) : difference;
+		}
+	});
+	return list.slice(0, count).join(", ") + (count < list.length ? `... (+${list.length - count})` : "");
+}
+
 export function formatAbsoluteTime(millis: number) {
 	const date = new Date(millis);
 	return `${millis - Date.now() >= MILLIS_PER_DAY ? date.toLocaleDateString() : ""} ${date.toLocaleTimeString()}`;
@@ -20,7 +36,7 @@ export function formatAbsoluteTime(millis: number) {
 
 export function formatRelativeTime(millis: number) {
 	if (millis <= 0) {
-		return "";
+		return undefined;
 	} else {
 		const seconds = Math.floor(millis / MILLIS_PER_SECOND) % SECONDS_PER_MINUTE;
 		const minutes = Math.floor(millis / MILLIS_PER_MINUTE) % MINUTES_PER_HOUR;

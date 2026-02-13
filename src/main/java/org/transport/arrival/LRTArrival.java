@@ -28,12 +28,12 @@ public final class LRTArrival extends ArrivalBase {
 				.flatMapIterable(platform -> platform.route_list == null ? List.of() : platform.route_list)
 				.map(route -> {
 					final String timeDigits = route.time_en.replaceAll("\\D", "");
-					final long seconds = timeDigits.isEmpty() ? 30 : Math.max(30, Integer.parseInt(timeDigits) * 60);
 					return new ArrivalDTO(
 							route.route_no,
 							route.dest_en,
 							route.dest_ch,
-							System.currentTimeMillis() + seconds * 1000,
+							0,
+							timeDigits.isEmpty() ? 0 : Integer.parseInt(timeDigits),
 							true,
 							provider
 					);
