@@ -3,8 +3,7 @@ package org.transport.service;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
-import org.transport.arrival.CTBArrival;
-import org.transport.arrival.KMBArrival;
+import org.transport.arrival.*;
 import org.transport.dto.ArrivalDTO;
 import org.transport.type.Provider;
 import reactor.core.publisher.Flux;
@@ -19,6 +18,9 @@ public final class ArrivalService {
 
 	private final KMBArrival kmbArrival;
 	private final CTBArrival ctbArrival;
+	private final MTRArrival mtrArrival;
+	private final LRTArrival lrtArrival;
+	private final GMBArrival gmbArrival;
 
 	public Flux<ArrivalDTO> getArrivals(List<String> stopIds) {
 		return Flux.fromIterable(stopIds)
@@ -28,6 +30,9 @@ public final class ArrivalService {
 					return switch (Provider.valueOf(stopIdSplit[0])) {
 						case KMB -> kmbArrival.getArrivals(stopIdRaw);
 						case CTB -> ctbArrival.getArrivals(stopIdRaw);
+						case MTR -> mtrArrival.getArrivals(stopIdRaw);
+						case LRT -> lrtArrival.getArrivals(stopIdRaw);
+						case GMB -> gmbArrival.getArrivals(stopIdRaw);
 						default -> Flux.empty();
 					};
 				}, ConsolidationService.CONCURRENCY_LIMIT)

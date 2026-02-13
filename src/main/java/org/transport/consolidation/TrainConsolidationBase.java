@@ -93,7 +93,7 @@ public abstract class TrainConsolidationBase extends ConsolidationBase {
 				.buffer(40)
 				.flatMap(stops -> {
 					final Map<String, Stop> stopsByPageTitleWithoutCoordinates = new HashMap<>();
-					stops.forEach(stop -> stopsByPageTitleWithoutCoordinates.put(SPECIAL_NAMES.getOrDefault(stop.nameTc, stop.nameTc + "站"), new Stop(String.format("%s_%s", provider, stop.id), stop.nameEn, stop.nameTc, 0, 0, new ArrayList<>(stop.routes), provider)));
+					stops.forEach(stop -> stopsByPageTitleWithoutCoordinates.put(SPECIAL_NAMES.getOrDefault(stop.nameTc, stop.nameTc + "站"), new Stop(String.format("%s_%s", provider, stop.id), stop.nameEn, stop.nameTc, 0, 0, new ArrayList<>(stop.routes), null, provider)));
 
 					return fetchWikipediaCoordinatesRecursive(String.join("|", stopsByPageTitleWithoutCoordinates.keySet()), null).flatMapIterable(wikipediaPages -> {
 						final List<Stop> resultStops = new ArrayList<>();
@@ -104,7 +104,7 @@ public abstract class TrainConsolidationBase extends ConsolidationBase {
 							if (coordinates.isEmpty()) {
 								log.error("Coordinates not found for [{}]", page.title);
 							} else {
-								resultStops.add(new Stop(existingStop.getId(), existingStop.getNameEn(), existingStop.getNameTc(), coordinates.getFirst().lat, coordinates.getFirst().lon, existingStop.getRoutes(), provider));
+								resultStops.add(new Stop(existingStop.getId(), existingStop.getNameEn(), existingStop.getNameTc(), coordinates.getFirst().lat, coordinates.getFirst().lon, existingStop.getRoutes(), null, provider));
 							}
 						});
 

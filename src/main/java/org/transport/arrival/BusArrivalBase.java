@@ -7,6 +7,7 @@ import org.transport.service.ConsolidationService;
 import org.transport.type.Provider;
 import reactor.core.publisher.Flux;
 
+import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
@@ -26,6 +27,7 @@ public abstract class BusArrivalBase extends ArrivalBase {
 				.retrieve()
 				.bodyToMono(ArrivalResponse.class)
 				.retryWhen(ConsolidationService.RETRY_BACKOFF_SPEC)
+				.cache(Duration.ofSeconds(10))
 				.flatMapIterable(arrivalResponse -> {
 					final List<ArrivalDTO> arrivals = new ArrayList<>();
 					arrivalResponse.data.forEach(data -> {

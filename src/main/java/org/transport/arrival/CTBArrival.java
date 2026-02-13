@@ -11,6 +11,8 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
 
+import java.util.List;
+
 @Service
 public final class CTBArrival extends BusArrivalBase {
 
@@ -27,7 +29,7 @@ public final class CTBArrival extends BusArrivalBase {
 	public Flux<ArrivalDTO> getArrivals(String stopId) {
 		return Mono.fromCallable(() -> persistenceService.getStop(String.format("%s_%s", provider, stopId)))
 				.subscribeOn(Schedulers.boundedElastic())
-				.flatMapIterable(Stop::getRoutes)
+				.flatMapIterable(stop -> stop.map(Stop::getRoutes).orElse(List.of()))
 				.flatMap(route -> getRawArrivals(String.format(ARRIVAL_URL, stopId, route)), ConsolidationService.CONCURRENCY_LIMIT);
 	}
 }

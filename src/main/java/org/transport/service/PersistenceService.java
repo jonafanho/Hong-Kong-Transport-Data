@@ -13,6 +13,7 @@ import org.transport.type.Provider;
 
 import java.util.DoubleSummaryStatistics;
 import java.util.List;
+import java.util.Optional;
 
 @Slf4j
 @AllArgsConstructor
@@ -44,8 +45,13 @@ public class PersistenceService {
 	}
 
 	@Transactional
-	public Stop getStop(String stopId) {
-		return stopRepository.getReferenceById(stopId);
+	public List<Stop> getStops(Provider provider) {
+		return stopRepository.findStopsByProvider(provider);
+	}
+
+	@Transactional
+	public Optional<Stop> getStop(String stopId) {
+		return stopRepository.findById(stopId);
 	}
 
 	@Transactional

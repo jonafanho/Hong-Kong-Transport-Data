@@ -9,7 +9,7 @@ import org.springframework.web.reactive.function.client.WebClient;
 @Configuration
 public class AppConfiguration {
 
-	private static final int BUFFER_SIZE = 16 * 1024 * 1024; // 16 MB
+	private static final int BUFFER_SIZE = 64 * 1024 * 1024; // 64 MB
 
 	@Bean
 	public WebClient webClient() {

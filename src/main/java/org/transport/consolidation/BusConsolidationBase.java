@@ -60,7 +60,7 @@ public abstract class BusConsolidationBase extends ConsolidationBase {
 						.bodyToMono(StopResponse.class)
 						.retryWhen(ConsolidationService.RETRY_BACKOFF_SPEC)
 						.map(StopResponse::data)
-						.map(stop -> new Stop(String.format("%s_%s", provider, stop.stop), stop.name_en, stop.name_tc, stop.lat, stop.lon, new ArrayList<>(stopWithRoutes.routes), provider))
+						.map(stop -> new Stop(String.format("%s_%s", provider, stop.stop), stop.name_en, stop.name_tc, stop.lat, stop.lon, new ArrayList<>(stopWithRoutes.routes), null, provider))
 						.onErrorResume(e -> {
 							log.error("[{}] Failed to fetch stop [{}]", provider, stopWithRoutes, e);
 							return Mono.empty();

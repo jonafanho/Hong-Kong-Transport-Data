@@ -1,8 +1,12 @@
 package org.transport.consolidation;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
+import org.transport.entity.RouteMapping;
 import org.transport.entity.Stop;
 import org.transport.service.ConsolidationService;
 import org.transport.type.Provider;
@@ -17,6 +21,7 @@ public final class GMBConsolidation extends ConsolidationBase {
 	private final WebClient webClient;
 
 	private static final String DATA_URL = "https://static.data.gov.hk/td/routes-fares-geojson/JSON_GMB.json";
+	private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 
 	public GMBConsolidation(WebClient webClient) {
 		super(Provider.GMB);
@@ -27,11 +32,20 @@ public final class GMBConsolidation extends ConsolidationBase {
 		return webClient.get()
 				.uri(DATA_URL)
 				.retrieve()
-				.bodyToMono(DataResponse.class)
+				.bodyToMono(String.class)
 				.retryWhen(ConsolidationService.RETRY_BACKOFF_SPEC)
+				.map(data -> {
+					try {
+						return OBJECT_MAPPER.readValue(data.substring(1), DataResponse.class);
+					} catch (JsonProcessingException e) {
+						log.error("Failed to parse GMB data", e);
+						return new DataResponse(List.of());
+					}
+				})
 				.map(DataResponse::features)
 				.flatMapIterable(features -> {
 					final Map<String, StopResponseDTO> stops = new HashMap<>();
+
 					features.forEach(feature -> {
 						final StopResponseDTO stop = stops.computeIfAbsent(feature.properties.stopId, key -> new StopResponseDTO(
 								String.format("%s_%s", provider, feature.properties.stopId),
@@ -39,23 +53,36 @@ public final class GMBConsolidation extends ConsolidationBase {
 								new HashSet<>(),
 								feature.geometry.coordinates.getLast(),
 								feature.geometry.coordinates.getFirst(),
-								new HashSet<>()
+								new HashSet<>(),
+								new HashMap<>()
 						));
-						trimAndAddToSet(stop.nameEn, feature.properties.stopNameE);
-						trimAndAddToSet(stop.nameTc, feature.properties.stopNameC);
+
+						trimAndAddToSet(stop.namesEn, feature.properties.stopNameE);
+						trimAndAddToSet(stop.namesTc, feature.properties.stopNameC);
 						stop.routes.add(feature.properties.routeNameE);
+
+						final RouteMappingDTO routeMapping = stop.routeIdMapping.computeIfAbsent(feature.properties.routeId, key -> new RouteMappingDTO(new HashSet<>(), new HashSet<>(), new HashSet<>()));
+						trimAndAddToSet(routeMapping.routeShortNames, feature.properties.routeNameE);
+						trimAndAddToSet(routeMapping.routeLongNamesEn, feature.properties.locEndNameE);
+						trimAndAddToSet(routeMapping.routeLongNamesTc, feature.properties.locEndNameC);
 					});
+
 					return stops.values();
 				})
-				.map(stop -> new Stop(
-						stop.id,
-						sortAndMerge(stop.nameEn),
-						sortAndMerge(stop.nameTc),
-						stop.lat,
-						stop.lon,
-						new ArrayList<>(stop.routes),
-						provider
-				));
+				.map(stop -> {
+					final Map<String, RouteMapping> routeIdMapping = new HashMap<>();
+					stop.routeIdMapping.forEach((routeId, routeMapping) -> routeIdMapping.put(routeId, new RouteMapping(sortAndMerge(routeMapping.routeShortNames), sortAndMerge(routeMapping.routeLongNamesEn), sortAndMerge(routeMapping.routeLongNamesTc))));
+					return new Stop(
+							stop.id,
+							sortAndMerge(stop.namesEn),
+							sortAndMerge(stop.namesTc),
+							stop.lat,
+							stop.lon,
+							new ArrayList<>(stop.routes),
+							routeIdMapping,
+							provider
+					);
+				});
 	}
 
 	private static void trimAndAddToSet(Set<String> set, String data) {
@@ -82,9 +109,12 @@ public final class GMBConsolidation extends ConsolidationBase {
 	private record GeometryDTO(List<Double> coordinates) {
 	}
 
-	private record PropertiesDTO(String routeId, String routeNameE, String stopId, String stopNameC, String stopNameE) {
+	private record PropertiesDTO(String routeId, String routeNameE, String locEndNameC, String locEndNameE, String stopId, String stopNameC, String stopNameE) {
 	}
 
-	private record StopResponseDTO(String id, Set<String> nameEn, Set<String> nameTc, double lat, double lon, Set<String> routes) {
+	private record StopResponseDTO(String id, Set<String> namesEn, Set<String> namesTc, double lat, double lon, Set<String> routes, Map<String, RouteMappingDTO> routeIdMapping) {
+	}
+
+	private record RouteMappingDTO(Set<String> routeShortNames, Set<String> routeLongNamesEn, Set<String> routeLongNamesTc) {
 	}
 }
