@@ -10,10 +10,7 @@ import org.transport.consolidation.*;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
-import reactor.util.retry.Retry;
-import reactor.util.retry.RetryBackoffSpec;
 
-import java.time.Duration;
 import java.util.List;
 
 @Slf4j
@@ -28,7 +25,6 @@ public final class ConsolidationService {
 	private final LRTConsolidation lrtConsolidation;
 	private final GMBConsolidation gmbConsolidation;
 
-	public static final RetryBackoffSpec RETRY_BACKOFF_SPEC = Retry.backoff(10, Duration.ofSeconds(1)).jitter(0.5);
 	public static final int CONCURRENCY_LIMIT = 5;
 
 	@EventListener(ApplicationReadyEvent.class)
@@ -46,7 +42,6 @@ public final class ConsolidationService {
 						.subscribeOn(Schedulers.boundedElastic())
 						.filter(Boolean::booleanValue)
 						.flatMapMany(canConsolidate -> consolidationBase.consolidate()
-								.retryWhen(RETRY_BACKOFF_SPEC)
 								.collectList()
 								.publishOn(Schedulers.boundedElastic())
 								.doOnNext(stops -> persistenceService.persistStops(stops, consolidationBase.provider))), CONCURRENCY_LIMIT)

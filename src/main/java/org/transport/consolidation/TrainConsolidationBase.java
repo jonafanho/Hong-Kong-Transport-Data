@@ -7,9 +7,10 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.Nullable;
-import org.springframework.web.reactive.function.client.WebClient;
 import org.transport.entity.Stop;
 import org.transport.service.ConsolidationService;
+import org.transport.service.PersistenceService;
+import org.transport.service.WebClientHelperService;
 import org.transport.type.Provider;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -20,9 +21,12 @@ import java.util.*;
 @Slf4j
 public abstract class TrainConsolidationBase extends ConsolidationBase {
 
-	private final WebClient webClient;
+	private final WebClientHelperService webClientHelperService;
+	private final PersistenceService persistenceService;
 	private final String stopsUrl;
+	private final Map<String, Stop> stopByIdCache = new HashMap<>();
 
+	private static final String WIKIPEDIA_URL = "https://zh.wikipedia.org/w/api.php?action=query&prop=coordinates&titles=%s&format=json%s";
 	private static final Map<String, List<WikipediaCoordinateDTO>> SPECIAL_COORDINATES = Map.of("豐景園", List.of(new WikipediaCoordinateDTO(22.3833, 113.972889)));
 	private static final Map<String, String> SPECIAL_NAMES = new HashMap<>();
 
@@ -58,18 +62,16 @@ public abstract class TrainConsolidationBase extends ConsolidationBase {
 		SPECIAL_NAMES.put("龍門", "龍門站 (香港)");
 	}
 
-	protected TrainConsolidationBase(WebClient webClient, String stopsUrl, Provider provider) {
+	protected TrainConsolidationBase(WebClientHelperService webClientHelperService, PersistenceService persistenceService, String stopsUrl, Provider provider) {
 		super(provider);
-		this.webClient = webClient;
+		this.webClientHelperService = webClientHelperService;
+		this.persistenceService = persistenceService;
 		this.stopsUrl = stopsUrl;
 	}
 
 	public final Flux<Stop> consolidate() {
-		return webClient.get()
-				.uri(stopsUrl)
-				.retrieve()
-				.bodyToMono(String.class)
-				.retryWhen(ConsolidationService.RETRY_BACKOFF_SPEC)
+		stopByIdCache.clear();
+		return webClientHelperService.create(String.class, stopsUrl)
 				.flatMapIterable(csvString -> {
 					final String cleanedCsvString = csvString.startsWith("\uFEFF") ? csvString.substring(1) : csvString;
 					final Map<String, StopResponseDTO> stopsByCode = new HashMap<>();
@@ -113,25 +115,15 @@ public abstract class TrainConsolidationBase extends ConsolidationBase {
 				}, ConsolidationService.CONCURRENCY_LIMIT);
 	}
 
+	public final Stop getStopFromCache(String stopId) {
+		if (stopByIdCache.isEmpty()) {
+			persistenceService.getStops(provider).forEach(stop -> stopByIdCache.put(stop.getId(), stop));
+		}
+		return stopByIdCache.getOrDefault(stopId, new Stop("", "", "", 0, 0, List.of(), null, provider));
+	}
+
 	private Mono<Collection<WikipediaPageDTO>> fetchWikipediaCoordinatesRecursive(String titles, @Nullable String coContinue) {
-		return webClient.get()
-				.uri(uriBuilder -> {
-					uriBuilder.scheme("https").host("zh.wikipedia.org").path("/w/api.php");
-					uriBuilder.queryParam("action", "query");
-					uriBuilder.queryParam("prop", "coordinates");
-					uriBuilder.queryParam("titles", titles);
-					uriBuilder.queryParam("format", "json");
-
-					if (coContinue != null) {
-						uriBuilder.queryParam("cocontinue", coContinue);
-						uriBuilder.queryParam("continue", "||");
-					}
-
-					return uriBuilder.build();
-				})
-				.retrieve()
-				.bodyToMono(WikipediaDTO.class)
-				.retryWhen(ConsolidationService.RETRY_BACKOFF_SPEC)
+		return webClientHelperService.create(WikipediaDTO.class, WIKIPEDIA_URL, titles, coContinue == null ? "" : String.format("&cocontinue=%s&continue=||", coContinue))
 				.flatMap(thisWikipedia -> thisWikipedia.cont == null ? Mono.just(mapWikipediaPages(List.of(thisWikipedia.query.pages.values()))) : fetchWikipediaCoordinatesRecursive(titles, thisWikipedia.cont.cocontinue).map(wikipediaPages -> mapWikipediaPages(List.of(thisWikipedia.query.pages.values(), wikipediaPages))));
 	}
 

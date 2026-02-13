@@ -1,33 +1,26 @@
 package org.transport.arrival;
 
 import org.jspecify.annotations.Nullable;
-import org.springframework.web.reactive.function.client.WebClient;
 import org.transport.dto.ArrivalDTO;
-import org.transport.service.ConsolidationService;
+import org.transport.service.WebClientHelperService;
 import org.transport.type.Provider;
 import reactor.core.publisher.Flux;
 
-import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 
 public abstract class BusArrivalBase extends ArrivalBase {
 
-	private final WebClient webClient;
+	private final WebClientHelperService webClientHelperService;
 
-	public BusArrivalBase(WebClient webClient, Provider provider) {
+	public BusArrivalBase(WebClientHelperService webClientHelperService, Provider provider) {
 		super(provider);
-		this.webClient = webClient;
+		this.webClientHelperService = webClientHelperService;
 	}
 
 	protected final Flux<ArrivalDTO> getRawArrivals(String url) {
-		return webClient.get()
-				.uri(String.format(url))
-				.retrieve()
-				.bodyToMono(ArrivalResponse.class)
-				.retryWhen(ConsolidationService.RETRY_BACKOFF_SPEC)
-				.cache(Duration.ofSeconds(10))
+		return webClientHelperService.create(ArrivalResponse.class, url)
 				.flatMapIterable(arrivalResponse -> {
 					final List<ArrivalDTO> arrivals = new ArrayList<>();
 					arrivalResponse.data.forEach(data -> {

@@ -33,7 +33,6 @@ public final class ArrivalService {
 						case MTR -> mtrArrival.getArrivals(stopIdRaw);
 						case LRT -> lrtArrival.getArrivals(stopIdRaw);
 						case GMB -> gmbArrival.getArrivals(stopIdRaw);
-						default -> Flux.empty();
 					};
 				}, ConsolidationService.CONCURRENCY_LIMIT)
 				.sort(Comparator.comparingLong(ArrivalDTO::arrival));

@@ -5,10 +5,10 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
-import org.springframework.web.reactive.function.client.WebClient;
 import org.transport.entity.RouteMapping;
 import org.transport.entity.Stop;
-import org.transport.service.ConsolidationService;
+import org.transport.service.PersistenceService;
+import org.transport.service.WebClientHelperService;
 import org.transport.type.Provider;
 import reactor.core.publisher.Flux;
 
@@ -18,22 +18,22 @@ import java.util.*;
 @Service
 public final class GMBConsolidation extends ConsolidationBase {
 
-	private final WebClient webClient;
+	private final WebClientHelperService webClientHelperService;
+	private final PersistenceService persistenceService;
+	private final Map<String, Map<String, RouteMapping>> routeIdMappingByStopIdCache = new HashMap<>();
 
 	private static final String DATA_URL = "https://static.data.gov.hk/td/routes-fares-geojson/JSON_GMB.json";
 	private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 
-	public GMBConsolidation(WebClient webClient) {
+	public GMBConsolidation(WebClientHelperService webClientHelperService, PersistenceService persistenceService) {
 		super(Provider.GMB);
-		this.webClient = webClient;
+		this.webClientHelperService = webClientHelperService;
+		this.persistenceService = persistenceService;
 	}
 
 	public Flux<Stop> consolidate() {
-		return webClient.get()
-				.uri(DATA_URL)
-				.retrieve()
-				.bodyToMono(String.class)
-				.retryWhen(ConsolidationService.RETRY_BACKOFF_SPEC)
+		routeIdMappingByStopIdCache.clear();
+		return webClientHelperService.create(String.class, DATA_URL)
 				.map(data -> {
 					try {
 						return OBJECT_MAPPER.readValue(data.substring(1), DataResponse.class);
@@ -83,6 +83,14 @@ public final class GMBConsolidation extends ConsolidationBase {
 							provider
 					);
 				});
+	}
+
+	public Map<String, RouteMapping> getRouteIdMappingFromCache(String stopId) {
+		if (routeIdMappingByStopIdCache.isEmpty()) {
+			persistenceService.getStops(provider).forEach(stop -> routeIdMappingByStopIdCache.put(stop.getId(), stop.getRouteIdMapping()));
+		}
+		final Map<String, RouteMapping> routeIdMapping = routeIdMappingByStopIdCache.get(stopId);
+		return routeIdMapping == null ? new HashMap<>() : routeIdMapping;
 	}
 
 	private static void trimAndAddToSet(Set<String> set, String data) {
