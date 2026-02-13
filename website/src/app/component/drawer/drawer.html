@@ -33,7 +33,7 @@
 								<i class="pi pi-wifi"></i>
 							}
 							<div class="spacing"></div>
-							<div>{{ getRelativeTimes($index) ?? t('arrivals.arriving') }}</div>
+							<div>{{ arrival.arrival === 0 ? arrival.minutes === 0 ? t('arrivals.arriving') : t('arrivals.min', {minutes: arrival.minutes}) : getRelativeTimes($index) ?? t('arrivals.arriving') }}</div>
 						</div>
 					</div>
 					<p-divider/>

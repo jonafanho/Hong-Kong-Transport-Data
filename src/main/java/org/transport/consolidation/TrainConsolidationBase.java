@@ -117,7 +117,7 @@ public abstract class TrainConsolidationBase extends ConsolidationBase {
 
 	public final Stop getStopFromCache(String stopId) {
 		if (stopByIdCache.isEmpty()) {
-			persistenceService.getStops(provider).forEach(stop -> stopByIdCache.put(stop.getId(), stop));
+			persistenceService.getStops(provider).forEach(stop -> stopByIdCache.put(stop.getId().split("_", 2)[1], stop));
 		}
 		return stopByIdCache.getOrDefault(stopId, new Stop("", "", "", 0, 0, List.of(), null, provider));
 	}

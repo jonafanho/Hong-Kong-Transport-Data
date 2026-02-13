@@ -1,6 +1,7 @@
 {
 	"title.arrivals": "班次",
 	"field.routes": "路綫",
+	"arrivals.min": "{{minutes}} 分鐘",
 	"arrivals.arriving": "即將到達",
 	"arrivals.no-arrivals": "沒有班次",
 	"menu.light-theme": "淺色主題",

@@ -1,6 +1,7 @@
 {
 	"title.arrivals": "Arrivals",
 	"field.routes": "Routes",
+	"arrivals.min": "{{minutes}} min",
 	"arrivals.arriving": "Arriving",
 	"arrivals.no-arrivals": "No Arrivals",
 	"menu.light-theme": "Light Theme",

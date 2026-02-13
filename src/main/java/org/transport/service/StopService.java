@@ -32,7 +32,7 @@ public final class StopService {
 		)).toList(), mergeDistance);
 
 		if (rawStops.size() != stops.size()) {
-			log.info("{} stop(s) merged to {} stop(s) in {} ms", rawStops.size(), stops.size(), System.currentTimeMillis() - startMillis);
+			log.debug("{} stop(s) merged to {} stop(s) in {} ms", rawStops.size(), stops.size(), System.currentTimeMillis() - startMillis);
 		}
 
 		return stops;

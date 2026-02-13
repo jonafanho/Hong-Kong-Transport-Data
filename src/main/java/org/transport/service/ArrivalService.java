@@ -35,6 +35,7 @@ public final class ArrivalService {
 						case GMB -> gmbArrival.getArrivals(stopIdRaw);
 					};
 				}, ConsolidationService.CONCURRENCY_LIMIT)
-				.sort(Comparator.comparingLong(ArrivalDTO::arrival));
+				.distinct(arrival -> String.format("%s_%s_%s", arrival.routeShortName(), arrival.arrival(), arrival.minutes()))
+				.sort(Comparator.comparingLong(arrival -> arrival.minutes() + arrival.arrival()));
 	}
 }
