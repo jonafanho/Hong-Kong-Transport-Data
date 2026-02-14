@@ -4,6 +4,7 @@
 	"arrivals.platform": "{{platform}} 號月台",
 	"arrivals.arriving": "即將到達",
 	"arrivals.no-arrivals": "沒有班次",
+	"menu.group-arrivals": "班次分組",
 	"menu.light-theme": "淺色主題",
 	"menu.dark-theme": "深色主題"
 }

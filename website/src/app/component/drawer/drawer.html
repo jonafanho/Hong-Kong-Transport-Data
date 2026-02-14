@@ -1,8 +1,12 @@
 <p-drawer *transloco="let t" [(visible)]="visible" position="right" [modal]="false" [style]="{width: '40rem', maxWidth: '100%'}" (onHide)="closeDrawer()">
 	<ng-template #header>
-		<div class="row gap center wrapper">
+		<div class="row gap center wrapper" [formGroup]="formGroup">
 			<h2>{{ t('title.arrivals') }}</h2>
 			<div class="spacing"></div>
+			<div class="row gap-small">
+				<p-checkbox inputId="group-arrivals" formControlName="groupArrivals" [binary]="true"/>
+				<label for="group-arrivals">{{ t('menu.group-arrivals') }}</label>
+			</div>
 			<p-button [icon]="isDarkTheme() ? 'pi pi-sun' : 'pi pi-moon'" (onClick)="toggleTheme()" [rounded]="true" [text]="true" [pTooltip]="t(isDarkTheme() ? 'menu.light-theme' : 'menu.dark-theme')" tooltipPosition="bottom"/>
 		</div>
 	</ng-template>
@@ -23,7 +27,7 @@
 		} @else {
 			<p-divider/>
 			<div class="column content">
-				@if (getArrivals().length === 0) {
+				@if (getArrivals().length === 0 && getGroupedArrivals().length === 0) {
 					<div class="column center">
 						<div>{{ t("arrivals.no-arrivals") }}</div>
 					</div>
@@ -48,10 +52,50 @@
 								<i class="pi pi-wifi"></i>
 							}
 							<div class="spacing"></div>
-							<div>{{ arrival.arrival === 0 ? arrival.minutes === 0 ? t('arrivals.arriving') : t('arrivals.min', {minutes: arrival.minutes}) : getRelativeTimes($index) ?? t('arrivals.arriving') }}</div>
+							<div>{{ arrival.arrival === 0 ? arrival.minutes === 0 ? t('arrivals.arriving') : t('arrivals.min', {minutes: arrival.minutes}) : getRelativeTimes()[arrival.arrival.toString()] ?? t('arrivals.arriving') }}</div>
 						</div>
 					</div>
 					<p-divider/>
+				}
+
+				@if (getGroupedArrivals().length > 0) {
+					<div class="column gap">
+						@for (arrivals of getGroupedArrivals(); track $index) {
+							<div class="padding-sides">
+								<p-card>
+									<div class="column gap-small">
+										<div class="row gap center">
+											<div class="arrival-heading bold-text">{{ arrivals[0].routeShortName }}</div>
+											<div class="column spacing">
+												<div class="bold-text">{{ arrivals[0].routeLongNameTc }}</div>
+												<div class="bold-text">{{ arrivals[0].routeLongNameEn }}</div>
+											</div>
+											@if (arrivals[0].platform) {
+												<div class="small-text">{{ t('arrivals.platform', {platform: arrivals[0].platform}) }}</div>
+											}
+										</div>
+										<div class="column">
+											@for (arrival of arrivals; track $index) {
+												<div class="row gap center arrivals" [style.border-left-color]="getColor(arrival)">
+													<div></div>
+													<div class="small-text">{{ arrival.provider }}</div>
+													<div class="small-text spacing">{{ formatDate(arrival) }}</div>
+													<div class="row center arrival-trailing arrival-fixed-width-large bold-text">
+														@if (arrival.realtime) {
+															<i class="pi pi-wifi"></i>
+														}
+														<div class="spacing"></div>
+														<div>{{ arrival.arrival === 0 ? arrival.minutes === 0 ? t('arrivals.arriving') : t('arrivals.min', {minutes: arrival.minutes}) : getRelativeTimes()[arrival.arrival.toString()] ?? t('arrivals.arriving') }}</div>
+													</div>
+												</div>
+											}
+										</div>
+									</div>
+								</p-card>
+							</div>
+						}
+						<div></div>
+					</div>
 				}
 			</div>
 		}

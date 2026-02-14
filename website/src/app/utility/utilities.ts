@@ -13,20 +13,21 @@ export function setCookie(name: string, value: string) {
 	document.cookie = `${name}=${value}; expires=${new Date(2999, 11, 31).toUTCString()}; path=/`;
 }
 
+export function sortNumbers(item1: string, item2: string) {
+	const item1FirstNumbers = /\d+/.exec(item1);
+	const item2FirstNumbers = /\d+/.exec(item2);
+	if (item1FirstNumbers && !item2FirstNumbers) {
+		return -1;
+	} else if (!item1FirstNumbers && item2FirstNumbers) {
+		return 1;
+	} else {
+		const difference = item1FirstNumbers && item2FirstNumbers ? parseInt(item1FirstNumbers[0]) - parseInt(item2FirstNumbers[0]) : 0;
+		return difference === 0 ? item1.localeCompare(item2) : difference;
+	}
+}
+
 export function sortAndTrim(list: string[], count: number) {
-	list.sort((item1, item2) => {
-		const item1FirstNumbers = /\d+/.exec(item1);
-		const item2FirstNumbers = /\d+/.exec(item2);
-		if (item1FirstNumbers && !item2FirstNumbers) {
-			return -1;
-		} else if (!item1FirstNumbers && item2FirstNumbers) {
-			return 1;
-		} else {
-			const difference = item1FirstNumbers && item2FirstNumbers ? parseInt(item1FirstNumbers[0]) - parseInt(item2FirstNumbers[0]) : 0;
-			return difference === 0 ? item1.localeCompare(item2) : difference;
-		}
-	});
-	return list.slice(0, count).join(", ") + (count < list.length ? `... (+${list.length - count})` : "");
+	return list.sort(sortNumbers).slice(0, count).join(", ") + (count < list.length ? `... (+${list.length - count})` : "");
 }
 
 export function formatAbsoluteTime(millis: number) {

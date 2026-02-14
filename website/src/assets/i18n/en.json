@@ -4,6 +4,7 @@
 	"arrivals.platform": "Platform {{platform}}",
 	"arrivals.arriving": "Arriving",
 	"arrivals.no-arrivals": "No Arrivals",
+	"menu.group-arrivals": "Group Arrivals",
 	"menu.light-theme": "Light Theme",
 	"menu.dark-theme": "Dark Theme"
 }

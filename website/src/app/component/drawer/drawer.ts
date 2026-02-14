@@ -5,21 +5,27 @@ import {DividerModule} from "primeng/divider";
 import {TranslocoDirective} from "@jsverse/transloco";
 import {ProgressBarModule} from "primeng/progressbar";
 import {ButtonModule} from "primeng/button";
-import {formatAbsoluteTime, sortAndTrim} from "../../utility/utilities";
+import {formatAbsoluteTime, getCookie, setCookie, sortAndTrim} from "../../utility/utilities";
 import {Arrival} from "../../data/arrival";
 import {getProviderColor} from "../../utility/stopIcon";
 import {TooltipModule} from "primeng/tooltip";
 import {ThemeService} from "../../service/theme.service";
+import {FormBuilder, FormControl, FormGroup, ReactiveFormsModule} from "@angular/forms";
+import {CheckboxModule} from "primeng/checkbox";
+import {CardModule} from "primeng/card";
 
 @Component({
 	selector: "app-drawer",
 	imports: [
 		DrawerModule,
 		DividerModule,
+		CardModule,
 		ProgressBarModule,
 		ButtonModule,
 		TooltipModule,
+		CheckboxModule,
 		TranslocoDirective,
+		ReactiveFormsModule,
 	],
 	templateUrl: "./drawer.html",
 	styleUrl: "./drawer.scss",
@@ -29,9 +35,17 @@ export class DrawerComponent {
 	private readonly themeService = inject(ThemeService);
 
 	protected visible = false;
+	protected readonly formGroup: FormGroup;
 
 	constructor() {
+		const formBuilder = inject(FormBuilder);
+
 		this.arrivalsService.stopOrAreaClicked.subscribe(stop => this.visible = !!stop);
+		this.formGroup = formBuilder.group({
+			groupArrivals: new FormControl(getCookie("group_arrivals") === "true"),
+		});
+
+		this.formGroup.valueChanges.subscribe(() => setCookie("group_arrivals", this.formGroup.getRawValue().groupArrivals));
 	}
 
 	closeDrawer() {
@@ -39,11 +53,15 @@ export class DrawerComponent {
 	}
 
 	getArrivals() {
-		return this.arrivalsService.arrivals();
+		return this.formGroup.getRawValue().groupArrivals ? [] : this.arrivalsService.arrivals();
 	}
 
-	getRelativeTimes(index: number) {
-		return this.arrivalsService.relativeTimes()[index];
+	getGroupedArrivals() {
+		return this.formGroup.getRawValue().groupArrivals ? this.arrivalsService.groupedArrivals() : [];
+	}
+
+	getRelativeTimes() {
+		return this.arrivalsService.relativeTimes();
 	}
 
 	getLoading() {
