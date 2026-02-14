@@ -1,0 +1,6 @@
+services:
+  hong-kong-transport:
+    build: .
+    image: hong-kong-transport-data:latest
+    ports:
+      - "80:8080"

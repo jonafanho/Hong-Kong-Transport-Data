@@ -3,7 +3,7 @@ on: [ pull_request, push, workflow_dispatch ]
 
 jobs:
   build:
-    runs-on: windows-latest
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
         uses: actions/checkout@main
@@ -31,3 +31,10 @@ jobs:
         with:
           name: Artifact
           path: build/libs/Hong-Kong-Transport-Data.jar
+      - name: Log in to GitHub Container Registry
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+      - name: Build and push
+        run: |
+          IMAGE_NAME=ghcr.io/${{ github.repository }}:latest
+          docker build -t $IMAGE_NAME .
+          docker push $IMAGE_NAME
