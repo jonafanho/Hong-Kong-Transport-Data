@@ -7,6 +7,11 @@ import {createIcon} from "../../utility/stopIcon";
 import {Stop} from "../../data/stop";
 import {ArrivalsService} from "../../service/arrivals.service";
 import {sortAndTrim} from "../../utility/utilities";
+import {ThemeService} from "../../service/theme.service";
+
+const attribution = {attribution: `&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>`};
+const lightTiles = Leaflet.tileLayer("https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png", attribution);
+const darkTiles = Leaflet.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png", attribution);
 
 @Component({
 	selector: "app-map",
@@ -16,10 +21,13 @@ import {sortAndTrim} from "../../utility/utilities";
 })
 export class MapComponent implements AfterViewInit {
 	private readonly arrivalsService = inject(ArrivalsService);
+	private readonly themeService = inject(ThemeService);
 	private readonly httpClient = inject(HttpClient);
 
 	private map?: Leaflet.Map;
 	private markerGroup?: Leaflet.LayerGroup;
+	private boxGroup?: Leaflet.LayerGroup;
+	private clickStart?: { lat: number, lon: number };
 	private timeoutId = 0;
 
 	ngAfterViewInit() {
@@ -50,15 +58,56 @@ export class MapComponent implements AfterViewInit {
 
 	private initMap(lat: number, lon: number, zoom: number) {
 		this.map = Leaflet.map("map").setView([lat, lon], zoom);
-		Leaflet.tileLayer("https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png", {
-			attribution: `&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>`,
-		}).addTo(this.map);
+		this.themeService.themeChanged.subscribe(() => this.setMapTheme());
+		this.setMapTheme();
 		this.markerGroup = Leaflet.layerGroup().addTo(this.map);
+		this.boxGroup = Leaflet.layerGroup().addTo(this.map);
+
 		this.map.on("moveend zoomend", () => {
 			clearTimeout(this.timeoutId);
 			this.timeoutId = setTimeout(() => this.getStops(), 100) as unknown as number;
 		});
+
+		this.map.on("mousedown", event => {
+			if (event.originalEvent.ctrlKey) {
+				this.map?.dragging.disable();
+				this.boxGroup?.clearLayers();
+				this.clickStart = {lat: event.latlng.lat, lon: event.latlng.lng};
+			}
+		});
+		this.map.on("mousemove", event => {
+			if (this.clickStart) {
+				this.boxGroup?.clearLayers();
+				this.boxGroup?.addLayer(Leaflet.rectangle([[this.clickStart.lat, this.clickStart.lon], [event.latlng.lat, event.latlng.lng]]));
+			}
+		});
+		this.map.on("mouseup", event => {
+			if (this.clickStart) {
+				this.boxGroup?.clearLayers();
+				const rectangle = Leaflet.rectangle([[this.clickStart.lat, this.clickStart.lon], [event.latlng.lat, event.latlng.lng]]);
+				const emit = () => this.arrivalsService.stopOrAreaClicked.emit({
+					minLat: rectangle.getBounds().getSouthWest().lat,
+					maxLat: rectangle.getBounds().getNorthEast().lat,
+					minLon: rectangle.getBounds().getSouthWest().lng,
+					maxLon: rectangle.getBounds().getNorthEast().lng,
+				});
+				rectangle.on("click", emit);
+				this.boxGroup?.addLayer(rectangle);
+				emit();
+				this.clickStart = undefined;
+			}
+			this.map?.dragging.enable();
+		});
+
 		this.getStops();
+	}
+
+	private setMapTheme() {
+		if (this.map) {
+			this.map.removeLayer(lightTiles);
+			this.map.removeLayer(darkTiles);
+			(this.themeService.darkTheme() ? darkTiles : lightTiles).addTo(this.map);
+		}
 	}
 
 	private getStops() {
@@ -87,7 +136,7 @@ export class MapComponent implements AfterViewInit {
 							`, {closeButton: false});
 						marker.on("mouseover", () => marker.openPopup());
 						marker.on("mouseout", () => marker.closePopup());
-						marker.on("click", () => this.arrivalsService.stopClicked.emit(stop));
+						marker.on("click", () => this.arrivalsService.stopOrAreaClicked.emit(stop));
 						this.markerGroup?.addLayer(marker);
 					});
 				}

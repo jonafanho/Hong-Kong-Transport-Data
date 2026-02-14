@@ -8,6 +8,8 @@ import {ButtonModule} from "primeng/button";
 import {formatAbsoluteTime, sortAndTrim} from "../../utility/utilities";
 import {Arrival} from "../../data/arrival";
 import {getProviderColor} from "../../utility/stopIcon";
+import {TooltipModule} from "primeng/tooltip";
+import {ThemeService} from "../../service/theme.service";
 
 @Component({
 	selector: "app-drawer",
@@ -16,6 +18,7 @@ import {getProviderColor} from "../../utility/stopIcon";
 		DividerModule,
 		ProgressBarModule,
 		ButtonModule,
+		TooltipModule,
 		TranslocoDirective,
 	],
 	templateUrl: "./drawer.html",
@@ -23,15 +26,16 @@ import {getProviderColor} from "../../utility/stopIcon";
 })
 export class DrawerComponent {
 	private readonly arrivalsService = inject(ArrivalsService);
+	private readonly themeService = inject(ThemeService);
 
 	protected visible = false;
 
 	constructor() {
-		this.arrivalsService.stopClicked.subscribe(stop => this.visible = !!stop);
+		this.arrivalsService.stopOrAreaClicked.subscribe(stop => this.visible = !!stop);
 	}
 
 	closeDrawer() {
-		this.arrivalsService.stopClicked.emit();
+		this.arrivalsService.stopOrAreaClicked.emit();
 	}
 
 	getArrivals() {
@@ -46,14 +50,14 @@ export class DrawerComponent {
 		return this.arrivalsService.loading();
 	}
 
-	getNames() {
-		const stop = this.getStop();
-		return stop ? [sortAndTrim(stop.namesTc, 100), sortAndTrim(stop.namesEn, 100)] : [];
+	getTitles() {
+		const stopOrArea = this.getStopOrArea();
+		return stopOrArea && "namesTc" in stopOrArea ? [sortAndTrim(stopOrArea.namesTc, 100), sortAndTrim(stopOrArea.namesEn, 100)] : [];
 	}
 
-	getRoutes() {
-		const stop = this.getStop();
-		return stop ? sortAndTrim(stop.routes, 100) : "";
+	getSubtitles() {
+		const stopOrArea = this.getStopOrArea();
+		return stopOrArea ? "routes" in stopOrArea ? [sortAndTrim(stopOrArea.routes, 100)] : [`${stopOrArea.minLat} -> ${stopOrArea.maxLat}`, `${stopOrArea.maxLon} -> ${stopOrArea.maxLon}`] : [];
 	}
 
 	getColor(arrival: Arrival) {
@@ -64,7 +68,15 @@ export class DrawerComponent {
 		return arrival.arrival === 0 ? "" : formatAbsoluteTime(arrival.arrival);
 	}
 
-	private getStop() {
-		return this.arrivalsService.stop();
+	isDarkTheme() {
+		return this.themeService.darkTheme();
+	}
+
+	toggleTheme() {
+		return this.themeService.setTheme(!this.themeService.darkTheme());
+	}
+
+	private getStopOrArea() {
+		return this.arrivalsService.stopOrArea();
 	}
 }

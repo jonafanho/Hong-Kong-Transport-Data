@@ -46,6 +46,7 @@ public final class GMBArrival extends ArrivalBase {
 										routeMapping.getRouteShortName(),
 										routeMapping.getRouteLongNameEn(),
 										routeMapping.getRouteLongNameTc(),
+										"",
 										arrival,
 										(int) Math.max(0, (arrival - millis) / 60000),
 										eta.remarks_en == null || !eta.remarks_en.toLowerCase().contains("scheduled"),

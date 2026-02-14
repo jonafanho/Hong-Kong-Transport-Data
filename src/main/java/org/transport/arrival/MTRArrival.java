@@ -56,6 +56,7 @@ public final class MTRArrival extends ArrivalBase {
 										route,
 										mtrConsolidation.getStopFromCache(eta.dest).getNameEn() + ("RAC".equals(eta.route) ? " via Racecourse" : ""),
 										mtrConsolidation.getStopFromCache(eta.dest).getNameTc() + ("RAC".equals(eta.route) ? "經馬場" : ""),
+										eta.plat,
 										arrival,
 										(int) Math.max(0, (arrival - millis) / 60000),
 										true,
@@ -75,6 +76,6 @@ public final class MTRArrival extends ArrivalBase {
 	private record ArrivalsDTO(@Nullable List<EtaDTO> UP, @Nullable List<EtaDTO> DOWN) {
 	}
 
-	private record EtaDTO(String time, String dest, @Nullable String route) {
+	private record EtaDTO(String time, String dest, String plat, @Nullable String route) {
 	}
 }

@@ -5,8 +5,11 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.transport.arrival.*;
 import org.transport.dto.ArrivalDTO;
+import org.transport.entity.Stop;
 import org.transport.type.Provider;
 import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
+import reactor.core.scheduler.Schedulers;
 
 import java.util.Comparator;
 import java.util.List;
@@ -16,6 +19,7 @@ import java.util.List;
 @Service
 public final class ArrivalService {
 
+	private final PersistenceService persistenceService;
 	private final KMBArrival kmbArrival;
 	private final CTBArrival ctbArrival;
 	private final MTRArrival mtrArrival;
@@ -23,8 +27,15 @@ public final class ArrivalService {
 	private final GMBArrival gmbArrival;
 
 	public Flux<ArrivalDTO> getArrivals(List<String> stopIds) {
-		return Flux.fromIterable(stopIds)
-				.flatMap(stopId -> {
+		return getArrivals(Flux.fromIterable(stopIds));
+	}
+
+	public Flux<ArrivalDTO> getArrivals(double minLat, double maxLat, double minLon, double maxLon) {
+		return getArrivals(Mono.fromCallable(() -> persistenceService.getStops(minLat, maxLat, minLon, maxLon)).subscribeOn(Schedulers.boundedElastic()).flatMapIterable(stops -> stops).map(Stop::getId));
+	}
+
+	private Flux<ArrivalDTO> getArrivals(Flux<String> stopIdsFlux) {
+		return stopIdsFlux.flatMap(stopId -> {
 					final String[] stopIdSplit = stopId.split("_", 2);
 					final String stopIdRaw = stopIdSplit[1];
 					return switch (Provider.valueOf(stopIdSplit[0])) {

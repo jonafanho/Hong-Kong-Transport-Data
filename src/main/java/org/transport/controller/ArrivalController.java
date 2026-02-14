@@ -16,8 +16,13 @@ public final class ArrivalController {
 
 	private final ArrivalService arrivalService;
 
-	@GetMapping("/getArrivals")
-	public Flux<ArrivalDTO> getArrivals(@RequestParam List<String> stopIds) {
+	@GetMapping("/getArrivalsByStopIds")
+	public Flux<ArrivalDTO> getArrivalsByStopIds(@RequestParam List<String> stopIds) {
 		return arrivalService.getArrivals(stopIds);
+	}
+
+	@GetMapping("/getArrivalsByArea")
+	public Flux<ArrivalDTO> getArrivalsByArea(@RequestParam double minLat, @RequestParam double maxLat, @RequestParam double minLon, @RequestParam double maxLon) {
+		return arrivalService.getArrivals(minLat, maxLat, minLon, maxLon);
 	}
 }

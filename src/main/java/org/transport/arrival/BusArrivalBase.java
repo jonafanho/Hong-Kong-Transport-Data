@@ -31,6 +31,7 @@ public abstract class BusArrivalBase extends ArrivalBase {
 									data.route,
 									data.dest_en,
 									data.dest_tc,
+									"",
 									arrival,
 									(int) Math.max(0, (arrival - millis) / 60000),
 									!data.rmk_en.toLowerCase().contains("scheduled"),

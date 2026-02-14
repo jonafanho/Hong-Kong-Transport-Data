@@ -7,6 +7,7 @@ import org.transport.service.WebClientHelperService;
 import org.transport.type.Provider;
 import reactor.core.publisher.Flux;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @Service
@@ -25,25 +26,33 @@ public final class LRTArrival extends ArrivalBase {
 	public Flux<ArrivalDTO> getArrivals(String stopId) {
 		return webClientHelperService.create(ArrivalResponse.class, ARRIVAL_URL, stopId)
 				.flatMapIterable(arrivalResponse -> arrivalResponse.platform_list == null ? List.of() : arrivalResponse.platform_list)
-				.flatMapIterable(platform -> platform.route_list == null ? List.of() : platform.route_list)
-				.map(route -> {
-					final String timeDigits = route.time_en.replaceAll("\\D", "");
-					return new ArrivalDTO(
-							route.route_no,
-							route.dest_en,
-							route.dest_ch,
-							0,
-							timeDigits.isEmpty() ? 0 : Integer.parseInt(timeDigits),
-							true,
-							provider
-					);
+				.flatMapIterable(platform -> {
+					final List<ArrivalDTO> arrivals = new ArrayList<>();
+
+					if (platform.route_list != null && platform.platform_id != null) {
+						platform.route_list.forEach(route -> {
+							final String timeDigits = route.time_en.replaceAll("\\D", "");
+							arrivals.add(new ArrivalDTO(
+									route.route_no,
+									route.dest_en,
+									route.dest_ch,
+									platform.platform_id,
+									0,
+									timeDigits.isEmpty() ? 0 : Integer.parseInt(timeDigits),
+									true,
+									provider
+							));
+						});
+					}
+
+					return arrivals;
 				});
 	}
 
 	private record ArrivalResponse(@Nullable List<PlatformDTO> platform_list) {
 	}
 
-	private record PlatformDTO(@Nullable List<RouteDTO> route_list) {
+	private record PlatformDTO(@Nullable List<RouteDTO> route_list, @Nullable String platform_id) {
 	}
 
 	private record RouteDTO(String dest_en, String dest_ch, String time_en, String route_no) {
