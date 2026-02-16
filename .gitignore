@@ -30,3 +30,4 @@ bin/
 
 src/main/resources/static/
 website/.gitignore
+src/main/java/org/transport/Version.java
