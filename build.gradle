@@ -1,3 +1,8 @@
+import org.apache.tools.ant.filters.ReplaceTokens
+
+import java.time.ZoneId
+import java.time.ZonedDateTime
+
 plugins {
 	id "java"
 	id "org.springframework.boot" version "3.+"
@@ -23,4 +28,14 @@ dependencies {
 	runtimeOnly "com.h2database:h2"
 	compileOnly "org.projectlombok:lombok"
 	annotationProcessor "org.projectlombok:lombok"
+}
+
+tasks.configureEach {
+	copy {
+		outputs.upToDateWhen { false }
+		from "src/main/VersionTemplate.java"
+		into "src/main/java/org/transport"
+		filter(ReplaceTokens, tokens: ["version": ZonedDateTime.now(ZoneId.of("Asia/Hong_Kong")).format("yyyyMMdd-HHmmss")])
+		rename "(.+)Template.java", "\$1.java"
+	}
 }

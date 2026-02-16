@@ -1,10 +1,14 @@
 {
 	"title.arrivals": "Arrivals",
+	"title.app-details": "App Details",
 	"arrivals.min": "{{minutes}} min",
 	"arrivals.platform": "Platform {{platform}}",
 	"arrivals.arriving": "Arriving",
 	"arrivals.no-arrivals": "No Arrivals",
 	"menu.group-arrivals": "Group Arrivals",
+	"menu.copy-request": "Copy HTTP Request URL",
 	"menu.light-theme": "Light Theme",
-	"menu.dark-theme": "Dark Theme"
+	"menu.dark-theme": "Dark Theme",
+	"details.data-last-updated": "Data Last Updated",
+	"details.version": "App Version"
 }

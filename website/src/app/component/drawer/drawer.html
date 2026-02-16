@@ -1,4 +1,4 @@
-<p-drawer *transloco="let t" [(visible)]="visible" position="right" [modal]="false" [style]="{width: '40rem', maxWidth: '100%'}" (onHide)="closeDrawer()">
+<p-drawer *transloco="let t" [(visible)]="drawerVisible" position="right" [modal]="false" [style]="{width: '40rem', maxWidth: '100%'}" (onHide)="closeDrawer()">
 	<ng-template #header>
 		<div class="row gap center wrapper" [formGroup]="formGroup">
 			<h2>{{ t('title.arrivals') }}</h2>
@@ -7,7 +7,11 @@
 				<p-checkbox inputId="group-arrivals" formControlName="groupArrivals" [binary]="true"/>
 				<label for="group-arrivals">{{ t('menu.group-arrivals') }}</label>
 			</div>
-			<p-button [icon]="isDarkTheme() ? 'pi pi-sun' : 'pi pi-moon'" (onClick)="toggleTheme()" [rounded]="true" [text]="true" [pTooltip]="t(isDarkTheme() ? 'menu.light-theme' : 'menu.dark-theme')" tooltipPosition="bottom"/>
+			<div class="row">
+				<p-button [icon]="copyStatus() === 'success' ? 'pi pi-check' : copyStatus() === 'error' ? 'pi pi-times' : 'pi pi-clipboard'" (onClick)="copyRequest()" [rounded]="true" [text]="true" [pTooltip]="t('menu.copy-request')" tooltipPosition="bottom"/>
+				<p-button icon="pi pi-info-circle" (onClick)="dialogVisible = true" [rounded]="true" [text]="true" [pTooltip]="t('title.app-details')" tooltipPosition="bottom"/>
+				<p-button [icon]="isDarkTheme() ? 'pi pi-sun' : 'pi pi-moon'" (onClick)="toggleTheme()" [rounded]="true" [text]="true" [pTooltip]="t(isDarkTheme() ? 'menu.light-theme' : 'menu.dark-theme')" tooltipPosition="bottom"/>
+			</div>
 		</div>
 	</ng-template>
 
@@ -101,3 +105,27 @@
 		}
 	</div>
 </p-drawer>
+
+<p-dialog *transloco="let t" [header]="t('title.app-details')" [modal]="true" [dismissableMask]="true" [(visible)]="dialogVisible" [style]="{ width: '24rem' }">
+	<div class="column gap">
+		<div class="column gap-small">
+			<div class="bold-text">{{ t('details.data-last-updated') }}</div>
+			<div class="row gap">
+				<div class="column">
+					@for (providerProperties of getAppDetails()?.data ?? []; track $index) {
+						<div class="bold-text">{{ providerProperties.provider }}</div>
+					}
+				</div>
+				<div class="column">
+					@for (providerProperties of getAppDetails()?.data ?? []; track $index) {
+						<div>{{ formatAbsoluteTime(providerProperties.lastUpdated) }}</div>
+					}
+				</div>
+			</div>
+		</div>
+		<div class="column gap-small">
+			<div class="bold-text">{{ t('details.version') }}</div>
+			<div>{{ getAppDetails()?.version }}</div>
+		</div>
+	</div>
+</p-dialog>

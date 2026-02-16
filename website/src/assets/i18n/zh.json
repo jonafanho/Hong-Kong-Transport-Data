@@ -1,10 +1,14 @@
 {
 	"title.arrivals": "班次",
+	"title.app-details": "應用程式資料",
 	"arrivals.min": "{{minutes}} 分鐘",
 	"arrivals.platform": "{{platform}} 號月台",
 	"arrivals.arriving": "即將到達",
 	"arrivals.no-arrivals": "沒有班次",
 	"menu.group-arrivals": "班次分組",
+	"menu.copy-request": "複製 HTTP 請求網址",
 	"menu.light-theme": "淺色主題",
-	"menu.dark-theme": "深色主題"
+	"menu.dark-theme": "深色主題",
+	"details.data-last-updated": "數據最近更新",
+	"details.version": "應用程式版本"
 }

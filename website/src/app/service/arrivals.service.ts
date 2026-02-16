@@ -4,6 +4,7 @@ import {Stop} from "../data/stop";
 import {url} from "../utility/settings";
 import {Arrival} from "../data/arrival";
 import {formatRelativeTime, sortNumbers} from "../utility/utilities";
+import {Response} from "../data/response";
 
 const fetchInterval = 3000;
 
@@ -17,7 +18,9 @@ export class ArrivalsService {
 	public readonly groupedArrivals = signal<Arrival[][]>([]);
 	public readonly relativeTimes = signal<Record<string, string>>({});
 	public readonly loading = signal<boolean>(false);
+	public readonly copyStatus = signal<"none" | "success" | "error">("none");
 	private intervalId = -1;
+	private timeoutId = -1;
 
 	constructor() {
 		this.stopOrAreaClicked.subscribe(stopOrArea => {
@@ -26,23 +29,37 @@ export class ArrivalsService {
 			this.groupedArrivals.set([]);
 			this.relativeTimes.set({});
 			this.loading.set(!!this.stopOrArea);
+			this.copyStatus.set("none");
+			clearTimeout(this.timeoutId);
 			this.fetchData();
 		});
 
 		setInterval(() => this.updateRelativeTimes(), 100);
 	}
 
+	copyRequest() {
+		const fullUrl = this.getFullUrl();
+		if (fullUrl) {
+			const update = (status: "success" | "error") => {
+				this.copyStatus.set(status);
+				clearTimeout(this.timeoutId);
+				this.timeoutId = setTimeout(() => this.copyStatus.set("none"), 2000);
+			};
+			navigator.clipboard.writeText(fullUrl).then(() => update("success"), () => update("error"));
+		}
+	}
+
 	private fetchData() {
-		const urlPart = this.getUrlPart();
-		if (urlPart) {
+		const fullUrl = this.getFullUrl();
+		if (fullUrl) {
 			clearTimeout(this.intervalId);
-			this.httpClient.get<Arrival[]>(`${url}api/${urlPart}`).subscribe({
-				next: arrivals => {
-					if (this.getUrlPart() === urlPart) {
-						this.arrivals.set(arrivals);
+			this.httpClient.get<Response<Arrival[]>>(fullUrl).subscribe({
+				next: ({data}) => {
+					if (this.getFullUrl() === fullUrl) {
+						this.arrivals.set(data);
 
 						const groupedArrivals: Arrival[][] = [];
-						arrivals.forEach(arrival => {
+						data.forEach(arrival => {
 							const existingGroup = groupedArrivals.find(existingArrivals => existingArrivals.some(existingArrival => arrival.routeShortName === existingArrival.routeShortName && (
 								ArrivalsService.containsString(arrival.routeLongNameEn, existingArrival.routeLongNameEn) ||
 								ArrivalsService.containsString(existingArrival.routeLongNameEn, arrival.routeLongNameEn) ||
@@ -77,11 +94,11 @@ export class ArrivalsService {
 						clearTimeout(this.intervalId);
 						this.intervalId = setTimeout(() => this.fetchData(), fetchInterval) as unknown as number;
 					} else {
-						console.warn("Skipping request", urlPart);
+						console.warn("Skipping request", fullUrl);
 					}
 				},
 				error: () => {
-					if (this.getUrlPart() === urlPart) {
+					if (this.getFullUrl() === fullUrl) {
 						this.loading.set(false);
 						clearTimeout(this.intervalId);
 						this.intervalId = setTimeout(() => this.fetchData(), fetchInterval) as unknown as number;
@@ -103,9 +120,9 @@ export class ArrivalsService {
 		this.relativeTimes.set(relativeTimes);
 	}
 
-	private getUrlPart() {
+	private getFullUrl() {
 		const stopOrArea = this.stopOrArea();
-		return stopOrArea ? "ids" in stopOrArea ? `getArrivalsByStopIds?stopIds=${stopOrArea?.ids?.join(",")}` : `getArrivalsByArea?minLat=${stopOrArea.minLat}&maxLat=${stopOrArea.maxLat}&minLon=${stopOrArea.minLon}&maxLon=${stopOrArea.maxLon}` : undefined;
+		return stopOrArea ? "ids" in stopOrArea ? `${url}api/getArrivalsByStopIds?stopIds=${stopOrArea?.ids?.join(",")}` : `${url}api/getArrivalsByArea?minLat=${stopOrArea.minLat}&maxLat=${stopOrArea.maxLat}&minLon=${stopOrArea.minLon}&maxLon=${stopOrArea.maxLon}` : undefined;
 	}
 
 	private static containsString(text1: string, text2: string) {

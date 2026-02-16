@@ -32,7 +32,7 @@ export function sortAndTrim(list: string[], count: number) {
 
 export function formatAbsoluteTime(millis: number) {
 	const date = new Date(millis);
-	return `${millis - Date.now() >= MILLIS_PER_DAY ? date.toLocaleDateString() : ""} ${date.toLocaleTimeString()}`;
+	return `${Math.abs(millis - Date.now()) >= MILLIS_PER_DAY ? date.toLocaleDateString() : ""} ${date.toLocaleTimeString()}`;
 }
 
 export function formatRelativeTime(millis: number) {

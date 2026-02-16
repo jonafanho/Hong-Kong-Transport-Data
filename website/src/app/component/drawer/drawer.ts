@@ -13,6 +13,8 @@ import {ThemeService} from "../../service/theme.service";
 import {FormBuilder, FormControl, FormGroup, ReactiveFormsModule} from "@angular/forms";
 import {CheckboxModule} from "primeng/checkbox";
 import {CardModule} from "primeng/card";
+import {MapService} from "../../service/map.service";
+import {DialogModule} from "primeng/dialog";
 
 @Component({
 	selector: "app-drawer",
@@ -24,6 +26,7 @@ import {CardModule} from "primeng/card";
 		ButtonModule,
 		TooltipModule,
 		CheckboxModule,
+		DialogModule,
 		TranslocoDirective,
 		ReactiveFormsModule,
 	],
@@ -32,15 +35,17 @@ import {CardModule} from "primeng/card";
 })
 export class DrawerComponent {
 	private readonly arrivalsService = inject(ArrivalsService);
+	private readonly mapService = inject(MapService);
 	private readonly themeService = inject(ThemeService);
 
-	protected visible = false;
+	protected drawerVisible = false;
+	protected dialogVisible = false;
 	protected readonly formGroup: FormGroup;
 
 	constructor() {
 		const formBuilder = inject(FormBuilder);
 
-		this.arrivalsService.stopOrAreaClicked.subscribe(stop => this.visible = !!stop);
+		this.arrivalsService.stopOrAreaClicked.subscribe(stop => this.drawerVisible = !!stop);
 		this.formGroup = formBuilder.group({
 			groupArrivals: new FormControl(getCookie("group_arrivals") === "true"),
 		});
@@ -86,12 +91,28 @@ export class DrawerComponent {
 		return arrival.arrival === 0 ? "" : formatAbsoluteTime(arrival.arrival);
 	}
 
+	copyRequest() {
+		this.arrivalsService.copyRequest();
+	}
+
+	copyStatus() {
+		return this.arrivalsService.copyStatus();
+	}
+
 	isDarkTheme() {
 		return this.themeService.darkTheme();
 	}
 
 	toggleTheme() {
 		return this.themeService.setTheme(!this.themeService.darkTheme());
+	}
+
+	getAppDetails() {
+		return this.mapService.appDetails();
+	}
+
+	formatAbsoluteTime(millis: number) {
+		return formatAbsoluteTime(millis);
 	}
 
 	private getStopOrArea() {

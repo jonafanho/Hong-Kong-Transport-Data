@@ -2,6 +2,7 @@ package org.transport.controller;
 
 import lombok.AllArgsConstructor;
 import org.springframework.web.bind.annotation.*;
+import org.transport.dto.ResponseDTO;
 import org.transport.dto.StopDTO;
 import org.transport.entity.ProviderProperties;
 import org.transport.service.PersistenceService;
@@ -19,12 +20,12 @@ public final class StopController {
 	private final PersistenceService persistenceService;
 
 	@GetMapping("/getStops")
-	public List<StopDTO> getStops(@RequestParam double minLat, @RequestParam double maxLat, @RequestParam double minLon, @RequestParam double maxLon, @RequestParam double mergeDistance) {
-		return stopService.getStops(minLat, maxLat, minLon, maxLon, mergeDistance);
+	public ResponseDTO<List<StopDTO>> getStops(@RequestParam double minLat, @RequestParam double maxLat, @RequestParam double minLon, @RequestParam double maxLon, @RequestParam double mergeDistance) {
+		return new ResponseDTO<>(stopService.getStops(minLat, maxLat, minLon, maxLon, mergeDistance));
 	}
 
 	@GetMapping("/getProviderProperties")
-	public List<ProviderProperties> getProviderProperties() {
-		return persistenceService.getAllProviderProperties();
+	public ResponseDTO<List<ProviderProperties>> getProviderProperties() {
+		return new ResponseDTO<>(persistenceService.getAllProviderProperties());
 	}
 }
