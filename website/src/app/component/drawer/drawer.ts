@@ -15,6 +15,7 @@ import {CheckboxModule} from "primeng/checkbox";
 import {CardModule} from "primeng/card";
 import {MapService} from "../../service/map.service";
 import {DialogModule} from "primeng/dialog";
+import {TableModule} from "primeng/table";
 
 @Component({
 	selector: "app-drawer",
@@ -27,6 +28,7 @@ import {DialogModule} from "primeng/dialog";
 		TooltipModule,
 		CheckboxModule,
 		DialogModule,
+		TableModule,
 		TranslocoDirective,
 		ReactiveFormsModule,
 	],
@@ -112,7 +114,7 @@ export class DrawerComponent {
 	}
 
 	formatAbsoluteTime(millis: number) {
-		return formatAbsoluteTime(millis);
+		return formatAbsoluteTime(millis, true);
 	}
 
 	private getStopOrArea() {

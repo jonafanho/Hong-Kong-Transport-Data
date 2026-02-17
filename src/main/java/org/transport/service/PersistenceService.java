@@ -3,7 +3,6 @@ package org.transport.service;
 import jakarta.transaction.Transactional;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.transport.entity.ProviderProperties;
 import org.transport.entity.Stop;
@@ -41,7 +40,7 @@ public class PersistenceService {
 
 	@Transactional
 	public List<Stop> getStops(double minLat, double maxLat, double minLon, double maxLon) {
-		return stopRepository.findByLatBetweenAndLonBetween(minLat, maxLat, minLon, maxLon, Pageable.ofSize(256)).getContent();
+		return stopRepository.findByLatBetweenAndLonBetween(minLat, maxLat, minLon, maxLon);
 	}
 
 	@Transactional

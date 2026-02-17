@@ -3,7 +3,7 @@
 		<div class="row gap center wrapper" [formGroup]="formGroup">
 			<h2>{{ t('title.arrivals') }}</h2>
 			<div class="spacing"></div>
-			<div class="row gap-small">
+			<div class="row gap-small center">
 				<p-checkbox inputId="group-arrivals" formControlName="groupArrivals" [binary]="true"/>
 				<label for="group-arrivals">{{ t('menu.group-arrivals') }}</label>
 			</div>
@@ -110,18 +110,14 @@
 	<div class="column gap">
 		<div class="column gap-small">
 			<div class="bold-text">{{ t('details.data-last-updated') }}</div>
-			<div class="row gap">
-				<div class="column">
-					@for (providerProperties of getAppDetails()?.data ?? []; track $index) {
-						<div class="bold-text">{{ providerProperties.provider }}</div>
-					}
-				</div>
-				<div class="column">
-					@for (providerProperties of getAppDetails()?.data ?? []; track $index) {
-						<div>{{ formatAbsoluteTime(providerProperties.lastUpdated) }}</div>
-					}
-				</div>
-			</div>
+			<p-table [value]="getAppDetails()?.data ?? []">
+				<ng-template #body let-providerProperties>
+					<tr>
+						<td>{{ providerProperties.provider }}</td>
+						<td class="right-align-text">{{ formatAbsoluteTime(providerProperties.lastUpdated) }}</td>
+					</tr>
+				</ng-template>
+			</p-table>
 		</div>
 		<div class="column gap-small">
 			<div class="bold-text">{{ t('details.version') }}</div>

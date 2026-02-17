@@ -110,18 +110,16 @@ export class MapService {
 	}
 
 	private getStops() {
-		if (this.map) {
-			const latLngBounds = this.map.getBounds();
-			const northEast = latLngBounds.getNorthEast();
-			const southWest = latLngBounds.getSouthWest();
-			const center = latLngBounds.getCenter();
-			const latOffset = Math.floor((center.lat + 180) / 360) * 360;
-			const lonOffset = Math.floor((center.lng + 180) / 360) * 360;
-			const mergeDistance = 50 / Math.pow(2, this.map.getZoom());
+		const fullUrl = this.getFullUrl();
 
-			this.httpClient.get<Response<Stop[]>>(`${url}api/getStops?minLat=${southWest.lat - latOffset}&maxLat=${northEast.lat - latOffset}&minLon=${southWest.lng - lonOffset}&maxLon=${northEast.lng - lonOffset}&mergeDistance=${mergeDistance}`).subscribe(({data}) => {
-				if (this.markerGroup) {
+		if (fullUrl) {
+			this.httpClient.get<Response<Stop[]>>(fullUrl).subscribe(({data}) => {
+				if (this.getFullUrl() === fullUrl && this.map && this.markerGroup) {
+					const center = this.map.getBounds().getCenter();
+					const latOffset = Math.floor((center.lat + 180) / 360) * 360;
+					const lonOffset = Math.floor((center.lng + 180) / 360) * 360;
 					this.markerGroup.clearLayers();
+
 					data.forEach(stop => {
 						const marker = Leaflet.marker([stop.lat + latOffset, stop.lon + lonOffset], {icon: createIcon(stop.providers), riseOnHover: true});
 						marker.bindPopup(`
@@ -138,8 +136,25 @@ export class MapService {
 						marker.on("click", () => this.arrivalsService.stopOrAreaClicked.emit(stop));
 						this.markerGroup?.addLayer(marker);
 					});
+				} else {
+					console.warn("Skipping request", fullUrl);
 				}
 			});
+		}
+	}
+
+	private getFullUrl() {
+		if (this.map) {
+			const latLngBounds = this.map.getBounds();
+			const northEast = latLngBounds.getNorthEast();
+			const southWest = latLngBounds.getSouthWest();
+			const center = latLngBounds.getCenter();
+			const latOffset = Math.floor((center.lat + 180) / 360) * 360;
+			const lonOffset = Math.floor((center.lng + 180) / 360) * 360;
+			const mergeDistance = 50 / Math.pow(2, this.map.getZoom());
+			return `${url}api/getStops?minLat=${southWest.lat - latOffset}&maxLat=${northEast.lat - latOffset}&minLon=${southWest.lng - lonOffset}&maxLon=${northEast.lng - lonOffset}&mergeDistance=${mergeDistance}`;
+		} else {
+			return undefined;
 		}
 	}
 }

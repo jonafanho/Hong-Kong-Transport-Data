@@ -30,9 +30,9 @@ export function sortAndTrim(list: string[], count: number) {
 	return list.sort(sortNumbers).slice(0, count).join(", ") + (count < list.length ? `... (+${list.length - count})` : "");
 }
 
-export function formatAbsoluteTime(millis: number) {
+export function formatAbsoluteTime(millis: number, forceShowDate = false) {
 	const date = new Date(millis);
-	return `${Math.abs(millis - Date.now()) >= MILLIS_PER_DAY ? date.toLocaleDateString() : ""} ${date.toLocaleTimeString()}`;
+	return `${Math.abs(millis - Date.now()) >= MILLIS_PER_DAY || forceShowDate ? date.toLocaleDateString() : ""} ${date.toLocaleTimeString()}`;
 }
 
 export function formatRelativeTime(millis: number) {
