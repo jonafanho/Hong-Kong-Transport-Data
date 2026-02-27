@@ -24,7 +24,14 @@ When viewing arrivals at a stop or within an area, the "Copy HTTP Request URL" b
 
 ## API Documentation
 
-This application provides several useful APIs. All requests are under `/api/`, for example:
+This application provides several useful APIs.
+
+- [GET: `getArrivalsByStopIds`](#get-getarrivalsbystopids)
+- [GET: `getArrivalsByArea`](#get-getarrivalsbyarea)
+- [GET: `getStops`](#get-getstops)
+- [GET: `getProviderProperties`](#get-getproviderproperties)
+
+All requests are under `/api/`, for example:
 
 ```
 http://localhost:8080/api/myEndpoint
