@@ -48,7 +48,7 @@ public abstract class BusConsolidationBase extends ConsolidationBase {
 				.flatMapIterable(HashMap::values)
 				.flatMap(stopWithRoutes -> webClientHelperService.create(StopResponse.class, stopUrl, stopWithRoutes.stopId)
 						.map(StopResponse::data)
-						.map(stop -> new Stop(String.format("%s_%s", provider, stop.stop), stop.name_en, stop.name_tc, stop.lat, stop.lon, new ArrayList<>(stopWithRoutes.routes), null, provider))
+						.map(stop -> new Stop(String.format("%s_%s", provider, stop.stop), stop.name_en == null ? "" : stop.name_en, stop.name_tc == null ? "" : stop.name_tc, stop.lat, stop.lon, new ArrayList<>(stopWithRoutes.routes), null, provider))
 						.onErrorResume(e -> {
 							log.error("[{}] Failed to fetch stop [{}]", provider, stopWithRoutes, e);
 							return Mono.empty();
@@ -70,7 +70,7 @@ public abstract class BusConsolidationBase extends ConsolidationBase {
 	private record StopResponse(StopResponseDTO data) {
 	}
 
-	private record StopResponseDTO(String stop, String name_en, String name_tc, double lat, @JsonProperty("long") double lon) {
+	private record StopResponseDTO(String stop, @Nullable String name_en, @Nullable String name_tc, double lat, @JsonProperty("long") double lon) {
 	}
 
 	private record RouteWithDirection(RouteDTO route, String direction) {

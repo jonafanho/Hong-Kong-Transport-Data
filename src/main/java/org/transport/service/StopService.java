@@ -20,9 +20,10 @@ public final class StopService {
 		final long startMillis = System.currentTimeMillis();
 		final Map<String, StopGroup> stopGroups = new HashMap<>();
 		final List<Stop> rawStops = persistenceService.getStops(minLat, maxLat, minLon, maxLon);
+		final double newMergeDistance = Math.max(0, mergeDistance);
 
 		rawStops.forEach(stop -> {
-			final String stopKey = String.format("%s_%s", Math.floor(stop.getLat() / mergeDistance), Math.floor(stop.getLon() / mergeDistance));
+			final String stopKey = String.format("%s_%s", newMergeDistance == 0 ? stop.getLat() : Math.floor(stop.getLat() / newMergeDistance), newMergeDistance == 0 ? stop.getLon() : Math.floor(stop.getLon() / newMergeDistance));
 			final StopGroup stopGroup = stopGroups.computeIfAbsent(stopKey, key -> new StopGroup());
 			stopGroup.ids.add(stop.getId());
 			stopGroup.namesEn.add(stop.getNameEn());

@@ -46,7 +46,7 @@ public final class ArrivalService {
 						case GMB -> gmbArrival.getArrivals(stopIdRaw);
 					};
 				}, ConsolidationService.CONCURRENCY_LIMIT)
-				.distinct(arrival -> String.format("%s_%s_%s", arrival.routeShortName(), arrival.arrival(), arrival.minutes()))
+				.distinct(arrival -> String.format("%s_%s_%s", arrival.route(), arrival.arrival(), arrival.minutes()))
 				.sort(Comparator.comparingLong(arrival -> arrival.minutes() + arrival.arrival()));
 	}
 }

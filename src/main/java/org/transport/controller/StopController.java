@@ -20,7 +20,7 @@ public final class StopController {
 	private final PersistenceService persistenceService;
 
 	@GetMapping("/getStops")
-	public ResponseDTO<List<StopDTO>> getStops(@RequestParam double minLat, @RequestParam double maxLat, @RequestParam double minLon, @RequestParam double maxLon, @RequestParam double mergeDistance) {
+	public ResponseDTO<List<StopDTO>> getStops(@RequestParam double minLat, @RequestParam double maxLat, @RequestParam double minLon, @RequestParam double maxLon, @RequestParam(required = false, defaultValue = "0") double mergeDistance) {
 		return new ResponseDTO<>(stopService.getStops(minLat, maxLat, minLon, maxLon, mergeDistance));
 	}
 

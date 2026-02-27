@@ -9,7 +9,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public final class RouteMapping {
 
-	private String routeShortName;
-	private String routeLongNameEn;
-	private String routeLongNameTc;
+	private String route;
+	private String destinationEn;
+	private String destinationTc;
 }

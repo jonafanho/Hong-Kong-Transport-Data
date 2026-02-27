@@ -45,7 +45,7 @@ export class ArrivalsService {
 				clearTimeout(this.timeoutId);
 				this.timeoutId = setTimeout(() => this.copyStatus.set("none"), 2000);
 			};
-			navigator.clipboard.writeText(fullUrl).then(() => update("success"), () => update("error"));
+			navigator.clipboard.writeText(new URL(fullUrl, document.baseURI).href).then(() => update("success"), () => update("error"));
 		}
 	}
 
@@ -60,11 +60,11 @@ export class ArrivalsService {
 
 						const groupedArrivals: Arrival[][] = [];
 						data.forEach(arrival => {
-							const existingGroup = groupedArrivals.find(existingArrivals => existingArrivals.some(existingArrival => arrival.routeShortName === existingArrival.routeShortName && (
-								ArrivalsService.containsString(arrival.routeLongNameEn, existingArrival.routeLongNameEn) ||
-								ArrivalsService.containsString(existingArrival.routeLongNameEn, arrival.routeLongNameEn) ||
-								ArrivalsService.containsString(arrival.routeLongNameTc, existingArrival.routeLongNameTc) ||
-								ArrivalsService.containsString(existingArrival.routeLongNameTc, arrival.routeLongNameTc)
+							const existingGroup = groupedArrivals.find(existingArrivals => existingArrivals.some(existingArrival => arrival.route === existingArrival.route && (
+								ArrivalsService.containsString(arrival.destinationEn, existingArrival.destinationEn) ||
+								ArrivalsService.containsString(existingArrival.destinationEn, arrival.destinationEn) ||
+								ArrivalsService.containsString(arrival.destinationTc, existingArrival.destinationTc) ||
+								ArrivalsService.containsString(existingArrival.destinationTc, arrival.destinationTc)
 							)));
 							if (existingGroup) {
 								existingGroup.push(arrival);
@@ -83,8 +83,8 @@ export class ArrivalsService {
 							} else if (!arrival1.platform && arrival2.platform) {
 								return 1;
 							} else {
-								const result = sortNumbers(arrival1.routeShortName, arrival2.routeShortName);
-								return result === 0 ? arrival1.routeLongNameEn.localeCompare(arrival2.routeLongNameEn) : result;
+								const result = sortNumbers(arrival1.route, arrival2.route);
+								return result === 0 ? arrival1.destinationEn.localeCompare(arrival2.destinationEn) : result;
 							}
 						});
 						this.groupedArrivals.set(groupedArrivalsList);

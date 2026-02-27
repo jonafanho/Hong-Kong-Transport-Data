@@ -86,7 +86,7 @@ export class DrawerComponent {
 	}
 
 	getColor(arrival: Arrival) {
-		return getProviderColor(arrival.provider, arrival.routeShortName);
+		return getProviderColor(arrival.provider, arrival.route);
 	}
 
 	formatDate(arrival: Arrival) {
@@ -99,6 +99,10 @@ export class DrawerComponent {
 
 	copyStatus() {
 		return this.arrivalsService.copyStatus();
+	}
+
+	openDocumentation() {
+		return window.open("https://github.com/jonafanho/Hong-Kong-Transport-Data/blob/master/README.md", "_blank");
 	}
 
 	isDarkTheme() {

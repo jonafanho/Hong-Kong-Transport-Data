@@ -187,7 +187,7 @@ const lrtLogo = `
 	</svg>
 `;
 
-export function getProviderColor(provider: Provider, routeShortName?: string) {
+export function getProviderColor(provider: Provider, route?: string) {
 	// https://hkrail.fandom.com/wiki/%E6%B8%AF%E9%90%B5%E8%B7%AF%E7%B6%AB
 	switch (provider) {
 		case "KMB":
@@ -197,7 +197,7 @@ export function getProviderColor(provider: Provider, routeShortName?: string) {
 		case "GMB":
 			return "#339933";
 		case "MTR":
-			switch (routeShortName) {
+			switch (route) {
 				case "EAL":
 					return "#53B7E8";
 				case "KTL":
@@ -222,7 +222,7 @@ export function getProviderColor(provider: Provider, routeShortName?: string) {
 					return "#FFFFFF";
 			}
 		case "LRT":
-			switch (routeShortName) {
+			switch (route) {
 				case "505":
 					return "#DA2128";
 				case "507":

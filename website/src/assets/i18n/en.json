@@ -1,5 +1,6 @@
 {
 	"title.arrivals": "Arrivals",
+	"title.documentation": "Documentation",
 	"title.app-details": "App Details",
 	"arrivals.min": "{{minutes}} min",
 	"arrivals.platform": "Platform {{platform}}",

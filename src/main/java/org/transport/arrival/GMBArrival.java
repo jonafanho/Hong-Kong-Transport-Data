@@ -43,9 +43,9 @@ public final class GMBArrival extends ArrivalBase {
 							data.eta.forEach(eta -> {
 								final long arrival = Instant.parse(eta.timestamp).toEpochMilli();
 								arrivals.add(new ArrivalDTO(
-										routeMapping.getRouteShortName(),
-										routeMapping.getRouteLongNameEn(),
-										routeMapping.getRouteLongNameTc(),
+										routeMapping.getRoute(),
+										routeMapping.getDestinationEn(),
+										routeMapping.getDestinationTc(),
 										"",
 										arrival,
 										(int) Math.max(0, (arrival - millis) / 60000),

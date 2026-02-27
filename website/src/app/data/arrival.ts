@@ -1,9 +1,9 @@
 import {Provider} from "./provider";
 
 export interface Arrival {
-	readonly routeShortName: string;
-	readonly routeLongNameEn: string;
-	readonly routeLongNameTc: string;
+	readonly route: string;
+	readonly destinationEn: string;
+	readonly destinationTc: string;
 	readonly platform: string;
 	readonly arrival: number;
 	readonly minutes: number;

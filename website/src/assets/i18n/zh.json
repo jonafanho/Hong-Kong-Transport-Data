@@ -1,5 +1,6 @@
 {
 	"title.arrivals": "班次",
+	"title.documentation": "文檔",
 	"title.app-details": "應用程式資料",
 	"arrivals.min": "{{minutes}} 分鐘",
 	"arrivals.platform": "{{platform}} 號月台",

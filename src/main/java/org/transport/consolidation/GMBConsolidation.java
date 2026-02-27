@@ -62,16 +62,16 @@ public final class GMBConsolidation extends ConsolidationBase {
 						stop.routes.add(feature.properties.routeNameE);
 
 						final RouteMappingDTO routeMapping = stop.routeIdMapping.computeIfAbsent(feature.properties.routeId, key -> new RouteMappingDTO(new HashSet<>(), new HashSet<>(), new HashSet<>()));
-						trimAndAddToSet(routeMapping.routeShortNames, feature.properties.routeNameE);
-						trimAndAddToSet(routeMapping.routeLongNamesEn, feature.properties.locEndNameE);
-						trimAndAddToSet(routeMapping.routeLongNamesTc, feature.properties.locEndNameC);
+						trimAndAddToSet(routeMapping.routes, feature.properties.routeNameE);
+						trimAndAddToSet(routeMapping.destinationsEn, feature.properties.locEndNameE);
+						trimAndAddToSet(routeMapping.destinationsTc, feature.properties.locEndNameC);
 					});
 
 					return stops.values();
 				})
 				.map(stop -> {
 					final Map<String, RouteMapping> routeIdMapping = new HashMap<>();
-					stop.routeIdMapping.forEach((routeId, routeMapping) -> routeIdMapping.put(routeId, new RouteMapping(sortAndMerge(routeMapping.routeShortNames), sortAndMerge(routeMapping.routeLongNamesEn), sortAndMerge(routeMapping.routeLongNamesTc))));
+					stop.routeIdMapping.forEach((routeId, routeMapping) -> routeIdMapping.put(routeId, new RouteMapping(sortAndMerge(routeMapping.routes), sortAndMerge(routeMapping.destinationsEn), sortAndMerge(routeMapping.destinationsTc))));
 					return new Stop(
 							stop.id,
 							sortAndMerge(stop.namesEn),
@@ -123,6 +123,6 @@ public final class GMBConsolidation extends ConsolidationBase {
 	private record StopResponseDTO(String id, Set<String> namesEn, Set<String> namesTc, double lat, double lon, Set<String> routes, Map<String, RouteMappingDTO> routeIdMapping) {
 	}
 
-	private record RouteMappingDTO(Set<String> routeShortNames, Set<String> routeLongNamesEn, Set<String> routeLongNamesTc) {
+	private record RouteMappingDTO(Set<String> routes, Set<String> destinationsEn, Set<String> destinationsTc) {
 	}
 }

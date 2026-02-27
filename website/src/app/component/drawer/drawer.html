@@ -9,6 +9,7 @@
 			</div>
 			<div class="row">
 				<p-button [icon]="copyStatus() === 'success' ? 'pi pi-check' : copyStatus() === 'error' ? 'pi pi-times' : 'pi pi-clipboard'" (onClick)="copyRequest()" [rounded]="true" [text]="true" [pTooltip]="t('menu.copy-request')" tooltipPosition="bottom"/>
+				<p-button icon="pi pi-question-circle" (onClick)="openDocumentation()" [rounded]="true" [text]="true" [pTooltip]="t('title.documentation')" tooltipPosition="bottom"/>
 				<p-button icon="pi pi-info-circle" (onClick)="dialogVisible = true" [rounded]="true" [text]="true" [pTooltip]="t('title.app-details')" tooltipPosition="bottom"/>
 				<p-button [icon]="isDarkTheme() ? 'pi pi-sun' : 'pi pi-moon'" (onClick)="toggleTheme()" [rounded]="true" [text]="true" [pTooltip]="t(isDarkTheme() ? 'menu.light-theme' : 'menu.dark-theme')" tooltipPosition="bottom"/>
 			</div>
@@ -39,10 +40,10 @@
 
 				@for (arrival of getArrivals(); track $index) {
 					<div class="row gap center padding-sides arrivals" [style.border-left-color]="getColor(arrival)">
-						<div class="arrival-heading arrival-fixed-width-small bold-text">{{ arrival.routeShortName }}</div>
+						<div class="arrival-heading arrival-fixed-width-small bold-text">{{ arrival.route }}</div>
 						<div class="column spacing">
-							<div class="bold-text">{{ arrival.routeLongNameTc }}</div>
-							<div class="bold-text">{{ arrival.routeLongNameEn }}</div>
+							<div class="bold-text">{{ arrival.destinationTc }}</div>
+							<div class="bold-text">{{ arrival.destinationEn }}</div>
 							<div class="row gap">
 								<div class="small-text">{{ arrival.provider }}</div>
 								@if (arrival.platform) {
@@ -69,10 +70,10 @@
 								<p-card>
 									<div class="column gap-small">
 										<div class="row gap center">
-											<div class="arrival-heading bold-text">{{ arrivals[0].routeShortName }}</div>
+											<div class="arrival-heading bold-text">{{ arrivals[0].route }}</div>
 											<div class="column spacing">
-												<div class="bold-text">{{ arrivals[0].routeLongNameTc }}</div>
-												<div class="bold-text">{{ arrivals[0].routeLongNameEn }}</div>
+												<div class="bold-text">{{ arrivals[0].destinationTc }}</div>
+												<div class="bold-text">{{ arrivals[0].destinationEn }}</div>
 											</div>
 											@if (arrivals[0].platform) {
 												<div class="small-text">{{ t('arrivals.platform', {platform: arrivals[0].platform}) }}</div>
