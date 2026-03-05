@@ -5,8 +5,10 @@ import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.transport.entity.Display;
+import org.transport.entity.DisplayProperties;
 import org.transport.entity.ProviderProperties;
 import org.transport.entity.Stop;
+import org.transport.repository.DisplayPropertiesRepository;
 import org.transport.repository.DisplayRepository;
 import org.transport.repository.ProviderPropertiesRepository;
 import org.transport.repository.StopRepository;
@@ -24,6 +26,7 @@ public class PersistenceService {
 	private final StopRepository stopRepository;
 	private final DisplayRepository displayRepository;
 	private final ProviderPropertiesRepository providerPropertiesRepository;
+	private final DisplayPropertiesRepository displayPropertiesRepository;
 	private static final int REFRESH_INTERVAL = 12 * 60 * 60 * 1000;
 
 	@Transactional
@@ -42,15 +45,17 @@ public class PersistenceService {
 	}
 
 	@Transactional
-	public void deleteAllDisplays() {
-		displayRepository.deleteAllInBatch();
+	public boolean canFetchDisplays(String category) {
+		return displayPropertiesRepository.findById(category).map(providerProperties -> System.currentTimeMillis() - providerProperties.getLastUpdated() > REFRESH_INTERVAL).orElse(true);
 	}
 
 	@Transactional
 	public void persistDisplays(List<Display> displays, String category) {
 		if (!displays.isEmpty()) {
-			log.info("Fetched {} displays for [{}]", displays.size(), category);
+			log.info("Fetched {} displays for [{}], replacing snapshot", displays.size(), category);
+			displayRepository.deleteAllByCategory(category);
 			displayRepository.saveAllAndFlush(displays);
+			displayPropertiesRepository.save(new DisplayProperties(category, System.currentTimeMillis()));
 		}
 	}
 

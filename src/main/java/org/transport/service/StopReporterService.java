@@ -21,6 +21,7 @@ import reactor.core.scheduler.Schedulers;
 
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BiFunction;
 import java.util.function.Function;
@@ -57,37 +58,37 @@ public final class StopReporterService {
 	public void fetchDisplays() {
 		log.info("Fetching displays");
 		final long startMillis = System.currentTimeMillis();
-		persistenceService.deleteAllDisplays();
 
 		parseWebsite(URL, document1 -> parseLinks(document1, getBaseUrl(URL), (document2, baseUrl1) -> {
 			final String category = document2.title();
 			final ObjectArrayList<DisplayDTO> displays1 = parseDocument(document2, category);
+			return Mono.fromCallable(() -> persistenceService.canFetchDisplays(category))
+					.subscribeOn(Schedulers.boundedElastic())
+					.filter(Boolean::booleanValue)
+					.flatMapMany(canFetchDisplays -> {
+						if (displays1.isEmpty()) {
+							return parseLinks(document2, baseUrl1, (document3, baseUrl2) -> {
+								final ObjectArrayList<DisplayDTO> displays2 = parseDocument(document3, category);
 
-			if (displays1.isEmpty()) {
-				return parseLinks(document2, baseUrl1, (document3, baseUrl2) -> {
-					final ObjectArrayList<DisplayDTO> displays2 = parseDocument(document3, category);
+								if (displays2.isEmpty()) {
+									log.warn("No images found for [{} {}]", category, document3.title());
+								}
 
-					if (displays2.isEmpty()) {
-						log.warn("No images found for [{} {}]", category, document3.title());
-					}
-
-					return Flux.just(new DisplaysWithCategory(category, displays2));
-				});
-			} else {
-				return Flux.just(new DisplaysWithCategory(category, displays1));
-			}
-		}))
-				.flatMap(displaysWithCategory -> Flux.fromIterable(displaysWithCategory.displays)
-						.flatMap(display -> Flux.fromIterable(display.sources)
-								.flatMap(this::getGoogleDriveImage, ConsolidationService.CONCURRENCY_LIMIT)
+								return Flux.fromIterable(displays2);
+							}).collectList().map(displays -> new DisplaysWithCategory(category, displays)).flux();
+						} else {
+							return Flux.just(new DisplaysWithCategory(category, displays1));
+						}
+					});
+		})).flatMap(displaysWithCategory -> Flux.fromIterable(displaysWithCategory.displays)
+						.flatMap(display -> Flux.fromIterable(display.sources).flatMap(source -> getGoogleDriveImage(source)
 								.map(rawBytes -> new Display(display.category, display.groups, DisplayService.process(rawBytes)))
 								.onErrorResume(e -> {
-									log.error("Failed to load process image", e);
+									log.error("Failed to process image", e);
 									return Mono.empty();
-								}))
+								}), ConsolidationService.CONCURRENCY_LIMIT), ConsolidationService.CONCURRENCY_LIMIT)
 						.collectList()
-						.publishOn(Schedulers.boundedElastic())
-						.doOnNext(displays -> persistenceService.persistDisplays(displays, displaysWithCategory.category)), ConsolidationService.CONCURRENCY_LIMIT)
+						.flatMap(displays -> Mono.fromRunnable(() -> persistenceService.persistDisplays(displays, displaysWithCategory.category)).subscribeOn(Schedulers.boundedElastic())))
 				.then()
 				.block();
 
@@ -98,15 +99,10 @@ public final class StopReporterService {
 	private Mono<byte[]> getGoogleDriveImage(String id) {
 		final byte[] cachedBytes = imageCache.get(id);
 		if (cachedBytes == null) {
-			return webClientHelperService.create(byte[].class, "https://lh3.googleusercontent.com/d/%s", id)
-					.map(bytes -> {
-						imageCache.put(id, bytes);
-						return bytes;
-					})
-					.onErrorResume(e -> {
-						log.error("Failed to load Google Drive image [{}]", id, e);
-						return Mono.empty();
-					});
+			return webClientHelperService.create(byte[].class, "https://lh3.googleusercontent.com/d/%s", id).map(bytes -> {
+				imageCache.put(id, bytes);
+				return bytes;
+			});
 		} else {
 			return Mono.just(cachedBytes);
 		}
@@ -234,6 +230,6 @@ public final class StopReporterService {
 	private record DisplayDTO(String category, ObjectArrayList<String> groups, ObjectArrayList<String> sources) {
 	}
 
-	private record DisplaysWithCategory(String category, ObjectArrayList<DisplayDTO> displays) {
+	private record DisplaysWithCategory(String category, List<DisplayDTO> displays) {
 	}
 }
