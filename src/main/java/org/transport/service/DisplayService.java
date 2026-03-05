@@ -1,39 +1,41 @@
 package org.transport.service;
 
-import lombok.AllArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import nu.pattern.OpenCV;
+import it.unimi.dsi.fastutil.ints.Int2LongMap;
+import it.unimi.dsi.fastutil.ints.Int2LongOpenHashMap;
+import it.unimi.dsi.fastutil.ints.IntArrayList;
+import it.unimi.dsi.fastutil.ints.IntOpenHashSet;
+import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import org.opencv.core.*;
 import org.opencv.imgcodecs.Imgcodecs;
 import org.opencv.imgproc.Imgproc;
-import org.springframework.boot.context.event.ApplicationReadyEvent;
-import org.springframework.context.event.EventListener;
-import org.springframework.stereotype.Service;
 
 import java.io.ByteArrayOutputStream;
-import java.util.*;
-import java.util.stream.Collectors;
+import java.util.Collections;
 
 
-@Slf4j
-@AllArgsConstructor
-@Service
 public final class DisplayService {
 
 	private static final int MAX_SMOOTH_AMOUNT = 5;
 
-	@EventListener(ApplicationReadyEvent.class)
-	public void runOnStartup() {
-		OpenCV.loadLocally();
-	}
-
-	public byte[] process(byte[] imageBytes) {
+	/**
+	 * Using the raw image bytes of an image of an LED dot matrix, convert it to a black and white byte array representing which LEDs are on.
+	 *
+	 * @param imageBytes the raw image bytes
+	 * @return a {@link RawDisplayDTO} object with width, height, and image byte data (1 bit per pixel)
+	 */
+	public static RawDisplayDTO process(byte[] imageBytes) {
 		final Mat image = getImage(imageBytes);
-		final byte[] result = getResult(image, estimatePitch(image, false), estimatePitch(image, true));
-		image.release();
-		return result;
+		try {
+			return getResult(image, estimatePitch(image, false), estimatePitch(image, true));
+		} finally {
+			image.release();
+		}
 	}
 
+	/**
+	 * @param imageBytes the raw image bytes
+	 * @return a grayscale {@link Mat} image
+	 */
 	private static Mat getImage(byte[] imageBytes) {
 		final MatOfByte matOfByte = new MatOfByte(imageBytes);
 		Mat imageBGR = Imgcodecs.imdecode(matOfByte, Imgcodecs.IMREAD_COLOR);
@@ -43,7 +45,7 @@ public final class DisplayService {
 		Imgproc.cvtColor(imageBGR, imageHSV, Imgproc.COLOR_BGR2HSV);
 		imageBGR.release();
 
-		final List<Mat> imageChannels = new ArrayList<>(3);
+		final ObjectArrayList<Mat> imageChannels = new ObjectArrayList<>(3);
 		Core.split(imageHSV, imageChannels);
 		final Mat grayscaleImage = imageChannels.get(2);
 		final Mat croppedImage = new Mat(grayscaleImage, getCropRange(grayscaleImage, false), getCropRange(grayscaleImage, true)).clone();
@@ -52,6 +54,11 @@ public final class DisplayService {
 		return croppedImage;
 	}
 
+	/**
+	 * @param image the input image
+	 * @param axis  {@code false} for X-axis, {@code true} for Y-axis
+	 * @return a range of pixels with the black border removed
+	 */
 	private static Range getCropRange(Mat image, boolean axis) {
 		final int width = image.width();
 		final int height = image.height();
@@ -79,6 +86,11 @@ public final class DisplayService {
 		return end > start ? new Range(start, end) : Range.all();
 	}
 
+	/**
+	 * @param input the input image
+	 * @param axis  {@code false} for X-axis, {@code true} for Y-axis
+	 * @return an array of summed brightness values across an axis of the image
+	 */
 	private static double[] getProjection(Mat input, boolean axis) {
 		final Mat sum = new Mat();
 		Core.reduce(input, sum, axis ? 1 : 0, Core.REDUCE_SUM, CvType.CV_64F);
@@ -88,9 +100,14 @@ public final class DisplayService {
 		return output;
 	}
 
+	/**
+	 * @param image the input image
+	 * @param axis  {@code false} for X-axis, {@code true} for Y-axis
+	 * @return the estimated pixels between LEDs on the image
+	 */
 	private static int estimatePitch(Mat image, boolean axis) {
 		final double[] projection = getProjection(image, axis);
-		final List<Integer> pitches = new ArrayList<>();
+		final IntArrayList pitches = new IntArrayList();
 
 		for (int smoothAmount = 0; smoothAmount < MAX_SMOOTH_AMOUNT; smoothAmount++) {
 			double previousValue = getSmoothedValue(projection, 0, smoothAmount);
@@ -127,7 +144,13 @@ public final class DisplayService {
 		return getMode(pitches);
 	}
 
-	private static byte[] getResult(Mat image, int pitchX, int pitchY) {
+	/**
+	 * @param image  the input image
+	 * @param pitchX the estimated distance in pixels between LEDs on the X-axis
+	 * @param pitchY the estimated distance in pixels between LEDs on the Y-axis
+	 * @return a {@link RawDisplayDTO} object with width, height, and image byte data (1 bit per pixel)
+	 */
+	private static RawDisplayDTO getResult(Mat image, int pitchX, int pitchY) {
 		final Mat binary = new Mat();
 		Imgproc.threshold(image, binary, 0, 255, Imgproc.THRESH_BINARY | Imgproc.THRESH_OTSU);
 
@@ -139,7 +162,7 @@ public final class DisplayService {
 		final int height = Math.ceilDiv(rawHeight, newPitchY);
 
 		final int[] pixels = new int[width * height];
-		final Set<Integer> values = new HashSet<>();
+		final IntOpenHashSet values = new IntOpenHashSet();
 
 		for (int x = 0; x < width; x++) {
 			for (int y = 0; y < height; y++) {
@@ -155,26 +178,28 @@ public final class DisplayService {
 		}
 
 		binary.release();
-		final int threshold = getMedian(new ArrayList<>(values));
+		final int threshold = getMedian(new IntArrayList(values));
 		final ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
-		byteArrayOutputStream.write((byte) (width >> 8));
-		byteArrayOutputStream.write((byte) (width & 0xFF));
-		byte count = 0;
-		boolean isWhite = false;
 
-		for (final int pixel : pixels) {
-			if ((pixel >= threshold) != isWhite || (count & 0xFF) == 0xFF) {
-				byteArrayOutputStream.write(count);
-				count = 0;
-				isWhite = !isWhite;
+		for (int i = 0; i < pixels.length; i += 8) {
+			int data = 0;
+			for (int j = 0; j < 8; j++) {
+				if (i + j < pixels.length) {
+					data |= (pixels[i + j] > threshold ? 0x80 : 0) >> j;
+				}
 			}
-			count++;
+			byteArrayOutputStream.write(data);
 		}
 
-		byteArrayOutputStream.write(count);
-		return byteArrayOutputStream.toByteArray();
+		return new RawDisplayDTO(width, height, byteArrayOutputStream.toByteArray());
 	}
 
+	/**
+	 * @param values       an input array of values
+	 * @param index        the index to retrieve
+	 * @param smoothAmount how many adjacent values to smooth from
+	 * @return a smoothed value created by the mean of adjacent values
+	 */
 	private static double getSmoothedValue(double[] values, int index, int smoothAmount) {
 		double sum = 0;
 
@@ -185,23 +210,30 @@ public final class DisplayService {
 		return sum / (smoothAmount * 2 + 1);
 	}
 
-	private static int getMedian(List<Integer> values) {
+	private static int getMedian(IntArrayList values) {
 		Collections.sort(values);
-		return values.isEmpty() ? 0 : values.get(values.size() / 2);
+		return values.isEmpty() ? 0 : values.getInt(values.size() / 2);
 	}
 
-	private static int getMode(List<Integer> values) {
+	private static int getMode(IntArrayList values) {
 		if (values.isEmpty()) {
 			return 0;
 		}
 
-		final Map<Integer, Long> frequencyMap = values.stream().collect(Collectors.groupingBy(value -> value, Collectors.counting()));
+		final Int2LongOpenHashMap frequencyMap = new Int2LongOpenHashMap();
+		for (int i = 0; i < values.size(); i++) {
+			frequencyMap.addTo(values.getInt(i), 1);
+		}
+
 		final long maxFrequency = Collections.max(frequencyMap.values());
-		return frequencyMap.entrySet()
+		return frequencyMap.int2LongEntrySet()
 				.stream()
-				.filter(entry -> entry.getValue() == maxFrequency)
-				.map(Map.Entry::getKey)
+				.filter(entry -> entry.getLongValue() == maxFrequency)
+				.mapToInt(Int2LongMap.Entry::getIntKey)
 				.findFirst()
 				.orElse(0);
+	}
+
+	public record RawDisplayDTO(int width, int height, byte[] imageBytes) {
 	}
 }

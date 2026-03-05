@@ -4,8 +4,10 @@ import jakarta.transaction.Transactional;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.transport.entity.Display;
 import org.transport.entity.ProviderProperties;
 import org.transport.entity.Stop;
+import org.transport.repository.DisplayRepository;
 import org.transport.repository.ProviderPropertiesRepository;
 import org.transport.repository.StopRepository;
 import org.transport.type.Provider;
@@ -20,6 +22,7 @@ import java.util.Optional;
 public class PersistenceService {
 
 	private final StopRepository stopRepository;
+	private final DisplayRepository displayRepository;
 	private final ProviderPropertiesRepository providerPropertiesRepository;
 	private static final int REFRESH_INTERVAL = 12 * 60 * 60 * 1000;
 
@@ -36,6 +39,19 @@ public class PersistenceService {
 		final DoubleSummaryStatistics latStatistics = stops.stream().mapToDouble(Stop::getLat).summaryStatistics();
 		final DoubleSummaryStatistics lonStatistics = stops.stream().mapToDouble(Stop::getLon).summaryStatistics();
 		providerPropertiesRepository.save(new ProviderProperties(provider, System.currentTimeMillis(), latStatistics.getMin(), latStatistics.getMax(), lonStatistics.getMin(), lonStatistics.getMax()));
+	}
+
+	@Transactional
+	public void deleteAllDisplays() {
+		displayRepository.deleteAllInBatch();
+	}
+
+	@Transactional
+	public void persistDisplays(List<Display> displays, String category) {
+		if (!displays.isEmpty()) {
+			log.info("Fetched {} displays for [{}]", displays.size(), category);
+			displayRepository.saveAllAndFlush(displays);
+		}
 	}
 
 	@Transactional
