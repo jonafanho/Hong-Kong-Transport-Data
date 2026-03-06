@@ -1,5 +1,8 @@
 package org.transport.service;
 
+import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
+import it.unimi.dsi.fastutil.objects.ObjectArrayList;
+import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -7,7 +10,8 @@ import org.transport.dto.StopDTO;
 import org.transport.entity.Stop;
 import org.transport.type.Provider;
 
-import java.util.*;
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Slf4j
 @AllArgsConstructor
@@ -18,7 +22,7 @@ public final class StopService {
 
 	public List<StopDTO> getStops(double minLat, double maxLat, double minLon, double maxLon, double mergeDistance) {
 		final long startMillis = System.currentTimeMillis();
-		final Map<String, StopGroup> stopGroups = new HashMap<>();
+		final Object2ObjectOpenHashMap<String, StopGroup> stopGroups = new Object2ObjectOpenHashMap<>();
 		final List<Stop> rawStops = persistenceService.getStops(minLat, maxLat, minLon, maxLon);
 		final double newMergeDistance = Math.max(0, mergeDistance);
 
@@ -34,15 +38,15 @@ public final class StopService {
 			stopGroup.lon += stop.getLon();
 		});
 
-		final List<StopDTO> stops = stopGroups.values().stream().map(stopGroup -> new StopDTO(
-				new ArrayList<>(stopGroup.ids),
-				new ArrayList<>(stopGroup.namesEn),
-				new ArrayList<>(stopGroup.namesTc),
+		final ObjectArrayList<StopDTO> stops = stopGroups.values().stream().map(stopGroup -> new StopDTO(
+				new ObjectArrayList<>(stopGroup.ids),
+				new ObjectArrayList<>(stopGroup.namesEn),
+				new ObjectArrayList<>(stopGroup.namesTc),
 				stopGroup.lat / stopGroup.ids.size(),
 				stopGroup.lon / stopGroup.ids.size(),
-				new ArrayList<>(stopGroup.routes),
-				new ArrayList<>(stopGroup.providers)
-		)).toList();
+				new ObjectArrayList<>(stopGroup.routes),
+				new ObjectArrayList<>(stopGroup.providers)
+		)).collect(Collectors.toCollection(ObjectArrayList::new));
 
 		if (rawStops.size() != stops.size()) {
 			log.debug("{} stop(s) merged to {} stop(s) in {} ms", rawStops.size(), stops.size(), System.currentTimeMillis() - startMillis);
@@ -53,11 +57,11 @@ public final class StopService {
 
 	private static class StopGroup {
 
-		private final Set<String> ids = new HashSet<>();
-		private final Set<String> namesEn = new HashSet<>();
-		private final Set<String> namesTc = new HashSet<>();
-		private final Set<String> routes = new HashSet<>();
-		private final Set<Provider> providers = new HashSet<>();
+		private final ObjectOpenHashSet<String> ids = new ObjectOpenHashSet<>();
+		private final ObjectOpenHashSet<String> namesEn = new ObjectOpenHashSet<>();
+		private final ObjectOpenHashSet<String> namesTc = new ObjectOpenHashSet<>();
+		private final ObjectOpenHashSet<String> routes = new ObjectOpenHashSet<>();
+		private final ObjectOpenHashSet<Provider> providers = new ObjectOpenHashSet<>();
 		private double lat = 0;
 		private double lon = 0;
 	}
