@@ -30,6 +30,8 @@ This application provides several useful APIs.
 - [GET: `getArrivalsByArea`](#get-getarrivalsbyarea)
 - [GET: `getStops`](#get-getstops)
 - [GET: `getProviderProperties`](#get-getproviderproperties)
+- [GET: `getDisplayPNG`](#get-getdisplaypng)
+- [GET: `getDisplays`](#get-getdisplays)
 
 All requests are under `/api/`, for example:
 
@@ -274,3 +276,110 @@ A list of transport providers with additional information. Example:
 - `maxLat` (number, required): The maximum latitude value of the stops for the transport provider
 - `minLon` (number, required): The minimum longitude value of the stops for the transport provider
 - `maxLon` (number, required): The maximum longitude value of the stops for the transport provider
+
+### GET: `getDisplayPNG`
+
+Obtains a PNG image of a dot matrix destination display with optional upscaling. Each LED of the dot matrix is mapped to one pixel.
+
+Only one image can be returned per request, so other matching displays can be fetched by changing the `index` parameter.
+
+#### Parameters
+
+Example:
+
+```
+/api/getDisplayPNG?category=Stopreporter - 新巴Hanover橙牌&exact=2X&width=128&scale=4
+```
+
+- `category` (string, optional): The category of the destination display
+- `exact` (string, required): A search query, usually a route number
+- `fuzzy` (string list, optional): Comma-separated additional fuzzy search queries
+- `width` (number, optional): The width (in pixels) of the display
+- `height` (number, optional): The height (in pixels) of the display
+- `scale` (number, optional): Upscaling to be applied to the image (whole numbers only)
+- `index` (number, optional): The zero-based index of the image to returned if there are multiple matches
+
+#### Response
+
+A PNG image of a destination display.
+
+### GET: `getDisplays`
+
+Obtains a list of a destination displays as raw data.
+
+#### Parameters
+
+Example:
+
+```
+/api/getDisplays?exact=40&fuzzy=舊版,麗港&height=32
+```
+
+- `category` (string, optional): The category of the destination display
+- `exact` (string, required): A search query, usually a route number
+- `fuzzy` (string list, optional): Comma-separated additional fuzzy search queries
+- `width` (number, optional): The width (in pixels) of the display
+- `height` (number, optional): The height (in pixels) of the display
+
+#### Response
+
+A list of destination displays in an uncompressed byte array format along with additional information. Example:
+
+```json
+{
+	"data": [
+		{
+			"category": "Stopreporter - 新巴Hanover橙牌",
+			"groups": [
+				"2X",
+				"灣仔碼頭",
+				"舊版"
+			],
+			"width": 128,
+			"height": 32,
+			"imageBytes": "QxGBP/gB/7+/5wAAAAiBCOY7Ab/5/f+/v+QAAAAr5b53u8GAMf2YAAMEVlIzPIVKI4HDgGAx/z+GB1VlRCv1CgM7AwDAMf8/v+QlRiIMQX9GfkcHgGGYMb/kVkQRO/EI58fPAwBh/zGwZ1RDZglBFHO7nwMAff8/v+AEAAAoQSIlbUt//P2YP7/gBAAAEYFBATkDf/zN/4AwYAAAAAAAABf/wwGBzf+xv+AAfgAAAAAf/8MBgMwBmz/gAf+AAAAANgADAYDNVZswYAP/wAAAADf/wwGAzVWKP+AH/+B4B4Bn/8MBgP1Vh7/gB4HweAeAYADDAYD9Ub+NgAcA8DwPAMADwweAzAe4ePAGAPAeHgBAAYMDAAADADBgBADwHh4AAAAAAAAAAAAAAAAA8A88AJIAADEAEH4AAAAAAfAH+ACSAABJAABAAAAAAAPgB/gAkgAAhQAAQAAAAAAHwAPwAJIAAIEAEEAAAAAAD4AB4ABUAACBABBAAAAAAB8AA/AAVHLAgWOQfOUpEAA+AAf4AFQLIIGQUEEWtRAAfAAH+ABUeiCBE9BB9CCgAPgADzwAKIoghRRQQQQgoAHwAB4eACiaIEkU0EEUIEAD//geHgAoaiAxE1BA5CBAA//4PA8AAAAAAAAAAAAAgAf/+HgHgAAAAAAAAAAAAQAH//h4B4A="
+		},
+		...
+	],
+	"currentTime": 946684800000,
+	"version": "build-20000101-123456"
+}
+```
+
+- `category` (string, required): The category of the destination display
+- `groups` (string array, required): The groups of the destination display
+- `width` (number, required): The width (in pixels) of the destination display
+- `height` (number, required): The height (in pixels) of the destination display
+- `imageBytes` (byte array, required): The destination display in an uncompressed byte array format (see below for details)
+
+#### Image Byte Array Format
+
+Each LED of the destination display's dot matrix is mapped to one pixel. Each pixel is mapped to one bit.
+
+Below is an example 9x9 image of a smiley face:
+
+```
+░░█████░░
+░█░░░░░█░
+█░░█░█░░█
+█░░░░░░░█
+█░░░░░░░█
+█░█░░░█░█
+█░░███░░█
+░█░░░░░█░
+░░█████░░
+```
+
+When traversing through the pixels from left to right, then top to bottom, the image can be represented as a series of bits:
+
+```
+0011 1110 0010 0000 ... 1110 0000
+```
+
+Note that since the number of pixels in the image is not divisible by 4, extra bits are padded to the end.
+
+Finally, these bits can be converted to a byte array:
+
+```
+[ 3, 14, 2, 0, ... 14, 0 ]
+```
