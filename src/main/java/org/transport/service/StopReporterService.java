@@ -33,6 +33,7 @@ import java.util.regex.Pattern;
 @Service
 public final class StopReporterService {
 
+	private final DisplayService displayService;
 	private final PersistenceService persistenceService;
 	private final WebClientHelperService webClientHelperService;
 	private final ConcurrentHashMap<String, byte[]> imageCache = new ConcurrentHashMap<>();
@@ -82,7 +83,7 @@ public final class StopReporterService {
 					});
 		})).flatMap(displaysWithCategory -> Flux.fromIterable(displaysWithCategory.displays)
 						.flatMap(display -> Flux.fromIterable(display.sources).flatMap(source -> getGoogleDriveImage(source)
-								.map(rawBytes -> new Display(display.category, display.groups, DisplayService.process(rawBytes)))
+								.map(rawBytes -> new Display(display.category, display.groups, displayService.process(rawBytes)))
 								.onErrorResume(e -> {
 									log.error("Failed to process image", e);
 									return Mono.empty();

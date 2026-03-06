@@ -21,6 +21,8 @@ public final class Display {
 	private UUID id;
 	@Column(nullable = false)
 	private String category;
+	@ElementCollection
+	@CollectionTable
 	@Column(nullable = false)
 	private List<String> groups;
 	@Column(nullable = false)

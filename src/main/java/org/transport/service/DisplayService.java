@@ -5,15 +5,22 @@ import it.unimi.dsi.fastutil.ints.Int2LongOpenHashMap;
 import it.unimi.dsi.fastutil.ints.IntArrayList;
 import it.unimi.dsi.fastutil.ints.IntOpenHashSet;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
+import lombok.AllArgsConstructor;
 import org.opencv.core.*;
 import org.opencv.imgcodecs.Imgcodecs;
 import org.opencv.imgproc.Imgproc;
+import org.springframework.stereotype.Service;
+import org.transport.dto.DisplayDTO;
 
 import java.io.ByteArrayOutputStream;
 import java.util.Collections;
+import java.util.List;
 
-
+@AllArgsConstructor
+@Service
 public final class DisplayService {
+
+	private final PersistenceService persistenceService;
 
 	private static final int MAX_SMOOTH_AMOUNT = 5;
 
@@ -23,12 +30,45 @@ public final class DisplayService {
 	 * @param imageBytes the raw image bytes
 	 * @return a {@link RawDisplayDTO} object with width, height, and image byte data (1 bit per pixel)
 	 */
-	public static RawDisplayDTO process(byte[] imageBytes) {
+	public RawDisplayDTO process(byte[] imageBytes) {
 		final Mat image = getImage(imageBytes);
 		try {
 			return getResult(image, estimatePitch(image, false), estimatePitch(image, true));
 		} finally {
 			image.release();
+		}
+	}
+
+	/**
+	 * Gets a PNG image as raw bytes, filtering by category, search terms, or dimensions.
+	 *
+	 * @param category        the category to filter by, or empty string for no filtering
+	 * @param exactSearchTerm the search term to match exactly
+	 * @param fuzzySearchTerm the search term to partially match
+	 * @param width           the width to match, or 0 for no matching
+	 * @param height          the height to match, or 0 for no matching
+	 * @param scale           optional upscaling to the result image
+	 * @param index           the zero-based index of the image, if there is more than one
+	 * @return the image as a byte array
+	 */
+	public byte[] getDisplayPNG(String category, String exactSearchTerm, List<String> fuzzySearchTerm, int width, int height, int scale, int index) {
+		final List<DisplayDTO> displays = persistenceService.getDisplays(category, exactSearchTerm, fuzzySearchTerm, width, height);
+		final Mat image;
+
+		if (displays.isEmpty()) {
+			image = new Mat(1, 1, CvType.CV_8U, Scalar.all(0));
+		} else {
+			image = decodeImage(displays.get(Math.clamp(index, 0, displays.size() - 1)), scale);
+		}
+
+		final MatOfByte matOfByte = new MatOfByte();
+
+		try {
+			Imgcodecs.imencode(".png", image, matOfByte);
+			return matOfByte.toArray();
+		} finally {
+			image.release();
+			matOfByte.release();
 		}
 	}
 
@@ -185,7 +225,7 @@ public final class DisplayService {
 			int data = 0;
 			for (int j = 0; j < 8; j++) {
 				if (i + j < pixels.length) {
-					data |= (pixels[i + j] > threshold ? 0x80 : 0) >> j;
+					data |= (pixels[i + j] >= threshold ? 0x80 : 0) >> j;
 				}
 			}
 			byteArrayOutputStream.write(data);
@@ -208,6 +248,33 @@ public final class DisplayService {
 		}
 
 		return sum / (smoothAmount * 2 + 1);
+	}
+
+	private static Mat decodeImage(DisplayDTO display, int scale) {
+		final int newScale = Math.max(1, scale);
+		final Mat image = new Mat(display.height() * newScale, display.width() * newScale, CvType.CV_8U);
+		int scaledX = 0;
+		int scaledY = 0;
+
+		for (int i = 0; i < display.imageBytes().length; i++) {
+			final byte data = display.imageBytes()[i];
+			for (int bit = 0; bit < 8; bit++) {
+				for (int rawX = 0; rawX < newScale; rawX++) {
+					for (int rawY = 0; rawY < newScale; rawY++) {
+						image.put(scaledY + rawY, scaledX + rawX, (data & (0x80 >> bit)) > 0 ? 0xFF : 0);
+					}
+				}
+
+				scaledX += newScale;
+
+				if (scaledX == display.width() * newScale) {
+					scaledX = 0;
+					scaledY += newScale;
+				}
+			}
+		}
+
+		return image;
 	}
 
 	private static int getMedian(IntArrayList values) {

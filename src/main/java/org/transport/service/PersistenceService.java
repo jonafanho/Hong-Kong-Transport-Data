@@ -3,7 +3,9 @@ package org.transport.service;
 import jakarta.transaction.Transactional;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Service;
+import org.transport.dto.DisplayDTO;
 import org.transport.entity.Display;
 import org.transport.entity.DisplayProperties;
 import org.transport.entity.ProviderProperties;
@@ -77,5 +79,25 @@ public class PersistenceService {
 	@Transactional
 	public List<ProviderProperties> getAllProviderProperties() {
 		return providerPropertiesRepository.findAll();
+	}
+
+	@Transactional
+	public List<DisplayDTO> getDisplays(@Nullable String category, String exactSearchTerm, @Nullable List<String> fuzzySearchTerms, int width, int height) {
+		return (category == null || category.isEmpty() ? displayRepository.findByGroupsContainingIgnoreCase(exactSearchTerm) : displayRepository.findByCategoryAndGroupsContainingIgnoreCase(category, exactSearchTerm))
+				.stream()
+				.map(display -> new DisplayDTO(
+						display.getCategory(),
+						List.copyOf(display.getGroups()),
+						display.getWidth(),
+						display.getHeight(),
+						display.getImageBytes()
+				))
+				.filter(display -> {
+					final boolean fuzzyMatch = fuzzySearchTerms == null || fuzzySearchTerms.isEmpty() || fuzzySearchTerms.stream().allMatch(fuzzySearchTerm -> display.groups().stream().anyMatch(group -> group.toLowerCase().contains(fuzzySearchTerm.toLowerCase())));
+					final boolean widthMatch = width <= 0 || width == display.width();
+					final boolean heightMatch = height <= 0 || height == display.height();
+					return fuzzyMatch && widthMatch && heightMatch;
+				})
+				.toList();
 	}
 }
