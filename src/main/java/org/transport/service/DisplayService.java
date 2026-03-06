@@ -4,7 +4,6 @@ import it.unimi.dsi.fastutil.ints.Int2LongMap;
 import it.unimi.dsi.fastutil.ints.Int2LongOpenHashMap;
 import it.unimi.dsi.fastutil.ints.IntArrayList;
 import it.unimi.dsi.fastutil.ints.IntOpenHashSet;
-import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import lombok.AllArgsConstructor;
 import org.opencv.core.*;
 import org.opencv.imgcodecs.Imgcodecs;
@@ -85,12 +84,11 @@ public final class DisplayService {
 		Imgproc.cvtColor(imageBGR, imageHSV, Imgproc.COLOR_BGR2HSV);
 		imageBGR.release();
 
-		final ObjectArrayList<Mat> imageChannels = new ObjectArrayList<>(3);
-		Core.split(imageHSV, imageChannels);
-		final Mat grayscaleImage = imageChannels.get(2);
+		final Mat grayscaleImage = new Mat();
+		Core.extractChannel(imageHSV, grayscaleImage, 2);
 		final Mat croppedImage = new Mat(grayscaleImage, getCropRange(grayscaleImage, false), getCropRange(grayscaleImage, true)).clone();
 		imageHSV.release();
-		imageChannels.forEach(Mat::release);
+		grayscaleImage.release();
 		return croppedImage;
 	}
 
@@ -194,6 +192,9 @@ public final class DisplayService {
 		final Mat binary = new Mat();
 		Imgproc.threshold(image, binary, 0, 255, Imgproc.THRESH_BINARY | Imgproc.THRESH_OTSU);
 
+		final Mat integral = new Mat();
+		Imgproc.integral(binary, integral, CvType.CV_32S);
+
 		final int rawWidth = image.width();
 		final int rawHeight = image.height();
 		final int newPitchX = Math.max(1, pitchX);
@@ -206,18 +207,18 @@ public final class DisplayService {
 
 		for (int x = 0; x < width; x++) {
 			for (int y = 0; y < height; y++) {
-				final Mat area = binary.submat(
-						Math.min(y * newPitchY, rawHeight), Math.min((y + 1) * newPitchY, rawHeight),
-						Math.min(x * newPitchX, rawWidth), Math.min((x + 1) * newPitchX, rawWidth)
-				);
-				final int value = Core.countNonZero(area);
-				area.release();
+				final int x1 = x * newPitchX;
+				final int x2 = Math.min((x + 1) * newPitchX, rawWidth);
+				final int y1 = y * newPitchY;
+				final int y2 = Math.min((y + 1) * newPitchY, rawHeight);
+				final int value = getRectangleSum(integral, x1 + 1, y1 + 1, x2 + 1, y2 + 1);
 				values.add(value);
 				pixels[x + y * width] = value;
 			}
 		}
 
 		binary.release();
+		integral.release();
 		final int threshold = getMedian(new IntArrayList(values));
 		final ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
 
@@ -275,6 +276,14 @@ public final class DisplayService {
 		}
 
 		return image;
+	}
+
+	private static int getRectangleSum(Mat integral, int x1, int y1, int x2, int y2) {
+		final int a = (int) integral.get(y1, x1)[0];
+		final int b = (int) integral.get(y1, x2)[0];
+		final int c = (int) integral.get(y2, x1)[0];
+		final int d = (int) integral.get(y2, x2)[0];
+		return d - b - c + a;
 	}
 
 	private static int getMedian(IntArrayList values) {

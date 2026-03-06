@@ -1,10 +1,13 @@
 package org.transport.service;
 
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
 import jakarta.transaction.Transactional;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.support.TransactionTemplate;
 import org.transport.dto.DisplayDTO;
 import org.transport.entity.Display;
 import org.transport.entity.DisplayProperties;
@@ -15,6 +18,9 @@ import org.transport.repository.DisplayRepository;
 import org.transport.repository.ProviderPropertiesRepository;
 import org.transport.repository.StopRepository;
 import org.transport.type.Provider;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
+import reactor.core.scheduler.Schedulers;
 
 import java.util.DoubleSummaryStatistics;
 import java.util.List;
@@ -29,6 +35,11 @@ public class PersistenceService {
 	private final DisplayRepository displayRepository;
 	private final ProviderPropertiesRepository providerPropertiesRepository;
 	private final DisplayPropertiesRepository displayPropertiesRepository;
+	private final TransactionTemplate transactionTemplate;
+
+	@PersistenceContext
+	private EntityManager entityManager;
+
 	private static final int REFRESH_INTERVAL = 12 * 60 * 60 * 1000;
 
 	@Transactional
@@ -51,14 +62,21 @@ public class PersistenceService {
 		return displayPropertiesRepository.findById(category).map(providerProperties -> System.currentTimeMillis() - providerProperties.getLastUpdated() > REFRESH_INTERVAL).orElse(true);
 	}
 
-	@Transactional
-	public void persistDisplays(List<Display> displays, String category) {
-		if (!displays.isEmpty()) {
-			log.info("Fetched {} displays for [{}], replacing snapshot", displays.size(), category);
+	public Mono<Void> persistDisplaysBatched(Flux<List<Display>> displayBatches, String category) {
+		return Mono.fromRunnable(() -> transactionTemplate.executeWithoutResult(status -> {
+			log.info("Fetched displays for [{}], replacing snapshot", category);
 			displayRepository.deleteAllByCategory(category);
-			displayRepository.saveAllAndFlush(displays);
+
+			displayBatches.toIterable(1).forEach(batch -> {
+				if (!batch.isEmpty()) {
+					displayRepository.saveAll(batch);
+					displayRepository.flush();
+					entityManager.clear();
+				}
+			});
+
 			displayPropertiesRepository.save(new DisplayProperties(category, System.currentTimeMillis()));
-		}
+		})).subscribeOn(Schedulers.boundedElastic()).then();
 	}
 
 	@Transactional

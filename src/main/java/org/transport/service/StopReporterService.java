@@ -22,7 +22,6 @@ import reactor.core.scheduler.Schedulers;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.List;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.regex.Matcher;
@@ -36,8 +35,8 @@ public final class StopReporterService {
 	private final DisplayService displayService;
 	private final PersistenceService persistenceService;
 	private final WebClientHelperService webClientHelperService;
-	private final ConcurrentHashMap<String, byte[]> imageCache = new ConcurrentHashMap<>();
 
+	private static final int MAX_BUFFER_SIZE = 250;
 	private static final String URL = "https://sites.google.com/view/stopreporter2003/電牌";
 	private static final String MATCHING_CLASS_NAME = "XqQF9c";
 	private static final ObjectImmutableList<String> BLACKLISTED_URLS = ObjectImmutableList.of("https://hkowsworkshop.wixsite.com/hkows", "https://sites.google.com/view/stopreporter2003/電牌/電牌更新日誌");
@@ -81,32 +80,20 @@ public final class StopReporterService {
 							return Flux.just(new DisplaysWithCategory(category, displays1));
 						}
 					});
-		})).flatMap(displaysWithCategory -> Flux.fromIterable(displaysWithCategory.displays)
-						.flatMap(display -> Flux.fromIterable(display.sources).flatMap(source -> getGoogleDriveImage(source)
+		})).concatMap(displaysWithCategory -> Flux.fromIterable(displaysWithCategory.displays)
+						.flatMap(display -> Flux.fromIterable(display.sources).concatMap(source -> webClientHelperService.create(byte[].class, "https://lh3.googleusercontent.com/d/%s", source)
+								.publishOn(Schedulers.parallel())
 								.map(rawBytes -> new Display(display.category, display.groups, displayService.process(rawBytes)))
 								.onErrorResume(e -> {
 									log.error("Failed to process image", e);
 									return Mono.empty();
-								}), ConsolidationService.CONCURRENCY_LIMIT), ConsolidationService.CONCURRENCY_LIMIT)
-						.collectList()
-						.flatMap(displays -> Mono.fromRunnable(() -> persistenceService.persistDisplays(displays, displaysWithCategory.category)).subscribeOn(Schedulers.boundedElastic())))
+								})), ConsolidationService.CONCURRENCY_LIMIT)
+						.buffer(MAX_BUFFER_SIZE)
+						.transform(displayBatches -> persistenceService.persistDisplaysBatched(displayBatches, displaysWithCategory.category)))
 				.then()
 				.block();
 
-		imageCache.clear();
 		log.info("Display fetching complete in {} seconds", (System.currentTimeMillis() - startMillis) / 1000);
-	}
-
-	private Mono<byte[]> getGoogleDriveImage(String id) {
-		final byte[] cachedBytes = imageCache.get(id);
-		if (cachedBytes == null) {
-			return webClientHelperService.create(byte[].class, "https://lh3.googleusercontent.com/d/%s", id).map(bytes -> {
-				imageCache.put(id, bytes);
-				return bytes;
-			});
-		} else {
-			return Mono.just(cachedBytes);
-		}
 	}
 
 	/**
